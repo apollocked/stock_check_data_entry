@@ -1,0 +1,24 @@
+import 'package:cross_file/cross_file.dart';
+
+import '../entities/branch.dart';
+import '../entities/item.dart';
+
+abstract interface class InventoryRepository {
+  Future<List<Branch>> fetchBranches();
+  Future<Branch> createBranch({required String name, String? location});
+  Future<void> deleteBranch(int branchId);
+
+  Future<String> uploadItemImage(XFile imageFile);
+
+  Future<Item> insertItem({
+    required int branchId,
+    required String name,
+    required double price,
+    String? description,
+    String? barcode,
+    String? imageUrl,
+  });
+
+  Future<List<Item>> fetchItems({int? branchId});
+  Future<void> deleteItem(Item item);
+}
