@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/services/csv_export_service.dart';
 import '../../domain/entities/item.dart';
 import '../controllers/inventory_controllers.dart';
 import '../providers/repository_providers.dart';
@@ -144,14 +143,15 @@ class _ManagerExportScreenState extends ConsumerState<ManagerExportScreen> {
           ),
           Expanded(
             child: itemsAsync.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, _) => Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('Failed to load items:\n$error',
-                        textAlign: TextAlign.center),
+                    Text(
+                      'Failed to load items:\n$error',
+                      textAlign: TextAlign.center,
+                    ),
                     const SizedBox(height: 12),
                     FilledButton.tonal(
                       onPressed: () => ref.invalidate(itemsProvider),
@@ -176,8 +176,7 @@ class _ManagerExportScreenState extends ConsumerState<ManagerExportScreen> {
                       )
                     : ListView.separated(
                         itemCount: items.length + 1,
-                        separatorBuilder: (_, __) =>
-                            const Divider(height: 1),
+                        separatorBuilder: (_, _) => const Divider(height: 1),
                         itemBuilder: (context, index) {
                           if (index == items.length) {
                             return Padding(
@@ -185,9 +184,7 @@ class _ManagerExportScreenState extends ConsumerState<ManagerExportScreen> {
                               child: Center(
                                 child: Text(
                                   '${items.length} item(s)',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
+                                  style: Theme.of(context).textTheme.bodySmall
                                       ?.copyWith(
                                         color: Theme.of(context)
                                             .colorScheme
@@ -207,7 +204,7 @@ class _ManagerExportScreenState extends ConsumerState<ManagerExportScreen> {
                                       width: 48,
                                       height: 48,
                                       fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) =>
+                                      errorBuilder: (_, _, _) =>
                                           const Icon(Icons.broken_image),
                                     ),
                                   )
@@ -215,8 +212,9 @@ class _ManagerExportScreenState extends ConsumerState<ManagerExportScreen> {
                                     backgroundColor: Theme.of(context)
                                         .colorScheme
                                         .surfaceContainerHighest,
-                                    child:
-                                        const Icon(Icons.image_not_supported),
+                                    child: const Icon(
+                                      Icons.image_not_supported,
+                                    ),
                                   ),
                             title: Text(item.name),
                             subtitle: Text(

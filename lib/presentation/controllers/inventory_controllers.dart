@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/entities/branch.dart';
 import '../../domain/entities/item.dart';
-import 'repository_providers.dart';
+import '../providers/repository_providers.dart';
 
 class BranchesController extends AsyncNotifier<List<Branch>> {
   @override

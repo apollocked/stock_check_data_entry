@@ -8,7 +8,10 @@ import 'presentation/screens/home_shell.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Supabase.initialize(url: Config.supabaseUrl, anonKey: Config.supabaseAnonKey);
+  await Supabase.initialize(
+    url: Config.supabaseUrl,
+    publishableKey: Config.supabaseAnonKey,
+  );
   runApp(const ProviderScope(child: StockCheckEntryApp()));
 }
 

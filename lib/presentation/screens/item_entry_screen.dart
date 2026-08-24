@@ -1,11 +1,13 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/error/app_exception.dart';
 import '../controllers/inventory_controllers.dart';
+import '../providers/repository_providers.dart';
 import 'barcode_scan_screen.dart';
 
 class ItemEntryScreen extends ConsumerStatefulWidget {
