@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:cross_file/cross_file.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -15,7 +13,7 @@ class ImageStorageDatasource {
 
   SupabaseClient get _client => Supabase.instance.client;
 
-  Future<String> upload(XFile imageFile) async {
+  Future<String> upload(XFile imageFile, {String? barcode}) async {
     final extension = imageFile.name.contains('.')
         ? imageFile.name.split('.').last.toLowerCase()
         : '';
@@ -24,14 +22,15 @@ class ImageStorageDatasource {
       throw Exception('Unsupported image type. Use jpg, png, webp or gif.');
     }
     final bytes = await imageFile.readAsBytes();
-    final fileName =
-        '${DateTime.now().microsecondsSinceEpoch}_${Random().nextInt(100000)}.$extension';
+    final fileName = barcode != null && barcode.isNotEmpty
+        ? '$barcode.$extension'
+        : '${DateTime.now().microsecondsSinceEpoch}.$extension';
     await _client.storage
         .from(_bucket)
         .uploadBinary(
           fileName,
           bytes,
-          fileOptions: FileOptions(contentType: contentType),
+          fileOptions: FileOptions(contentType: contentType, upsert: true),
         );
     return _client.storage.from(_bucket).getPublicUrl(fileName);
   }

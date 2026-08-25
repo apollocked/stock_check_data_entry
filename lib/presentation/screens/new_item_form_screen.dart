@@ -90,7 +90,10 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
       String? imageUrl = _existingImageUrl;
       if (_pickedImage != null) {
         _showSnackBar('Uploading image...');
-        imageUrl = await repo.uploadItemImage(_pickedImage!);
+        imageUrl = await repo.uploadItemImage(
+          _pickedImage!,
+          barcode: widget.barcode,
+        );
       }
 
       if (_isEditMode) {

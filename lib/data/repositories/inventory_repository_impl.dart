@@ -46,9 +46,9 @@ class InventoryRepositoryImpl implements InventoryRepository {
   }
 
   @override
-  Future<String> uploadItemImage(XFile imageFile) async {
+  Future<String> uploadItemImage(XFile imageFile, {String? barcode}) async {
     try {
-      return await _storage.upload(imageFile);
+      return await _storage.upload(imageFile, barcode: barcode);
     } catch (e) {
       throw AppException('Image upload failed: $e', AppExceptionType.storage);
     }

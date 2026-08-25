@@ -8,7 +8,7 @@ abstract interface class InventoryRepository {
   Future<Branch> createBranch({required String name, String? location});
   Future<void> deleteBranch(int branchId);
 
-  Future<String> uploadItemImage(XFile imageFile);
+  Future<String> uploadItemImage(XFile imageFile, {String? barcode});
 
   Future<Item> insertItem({
     required int branchId,
