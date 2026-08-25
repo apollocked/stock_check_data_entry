@@ -5,7 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/config.dart';
 import 'core/theme/app_theme.dart';
 import 'presentation/controllers/auth_controllers.dart';
-import 'presentation/screens/home_shell.dart';
+import 'presentation/screens/branch_list_screen.dart';
 import 'presentation/screens/login_screen.dart';
 
 Future<void> main() async {
@@ -31,7 +31,7 @@ class StockCheckEntryApp extends ConsumerWidget {
           .when(
             loading: () => const _Splash(),
             data: (signedIn) =>
-                signedIn ? const HomeShell() : const LoginScreen(),
+                signedIn ? const BranchListScreen() : const LoginScreen(),
             error: (_, _) => const LoginScreen(),
           ),
     );
