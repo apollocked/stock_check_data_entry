@@ -81,7 +81,7 @@ class _BarcodeLookupScreenState extends ConsumerState<BarcodeLookupScreen> {
   Future<void> _createNew() async {
     final created = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) => NewItemFormScreen(
+        builder: (_) => ItemFormScreen(
           branchId: widget.branchId,
           barcode: _barcodeController.text.trim(),
         ),

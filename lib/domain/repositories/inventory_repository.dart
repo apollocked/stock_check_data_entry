@@ -24,5 +24,14 @@ abstract interface class InventoryRepository {
     required int branchId,
     required String barcode,
   });
+
+  Future<Item> updateItem({
+    required int itemId,
+    required String name,
+    required double price,
+    String? description,
+    String? imageUrl,
+  });
+
   Future<void> deleteItem(Item item);
 }

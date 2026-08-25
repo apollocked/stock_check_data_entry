@@ -5,6 +5,7 @@ import '../../domain/entities/item.dart';
 import '../controllers/inventory_controllers.dart';
 import '../providers/repository_providers.dart';
 import 'barcode_lookup_screen.dart';
+import 'new_item_form_screen.dart';
 
 class BranchItemsScreen extends ConsumerStatefulWidget {
   final int branchId;
@@ -70,6 +71,19 @@ class _BranchItemsScreenState extends ConsumerState<BranchItemsScreen> {
     } catch (e) {
       _showSnackBar('$e', isError: true);
     }
+  }
+
+  Future<void> _editItem(Item item) async {
+    final updated = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => ItemFormScreen(
+          branchId: widget.branchId,
+          barcode: item.barcode ?? '',
+          existingItem: item,
+        ),
+      ),
+    );
+    if (updated == true) ref.invalidate(itemsProvider);
   }
 
   void _showSnackBar(String msg, {bool isError = false}) {
@@ -193,6 +207,7 @@ class _BranchItemsScreenState extends ConsumerState<BranchItemsScreen> {
                             final item = filtered[index];
                             return _ItemCard(
                               item: item,
+                              onTap: () => _editItem(item),
                               onDelete: () => _confirmDelete(item),
                             );
                           },
@@ -221,9 +236,14 @@ class _BranchItemsScreenState extends ConsumerState<BranchItemsScreen> {
 
 class _ItemCard extends StatelessWidget {
   final Item item;
+  final VoidCallback onTap;
   final VoidCallback onDelete;
 
-  const _ItemCard({required this.item, required this.onDelete});
+  const _ItemCard({
+    required this.item,
+    required this.onTap,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -235,6 +255,7 @@ class _ItemCard extends StatelessWidget {
       color: cs.surfaceContainerLow,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
+        onTap: onTap,
         onLongPress: onDelete,
         child: Padding(
           padding: const EdgeInsets.all(12),

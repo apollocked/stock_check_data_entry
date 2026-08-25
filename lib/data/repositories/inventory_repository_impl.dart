@@ -105,6 +105,30 @@ class InventoryRepositoryImpl implements InventoryRepository {
   }
 
   @override
+  Future<Item> updateItem({
+    required int itemId,
+    required String name,
+    required double price,
+    String? description,
+    String? imageUrl,
+  }) async {
+    try {
+      final row = await _remote.updateItem(
+        itemId: itemId,
+        updates: {
+          'name': name,
+          'price': price,
+          'description': description,
+          'image_url': imageUrl,
+        },
+      );
+      return Item.fromMap(row);
+    } catch (e) {
+      throw AppException('Could not update item: $e');
+    }
+  }
+
+  @override
   Future<void> deleteItem(Item item) async {
     try {
       await _remote.deleteItem(item.id);
