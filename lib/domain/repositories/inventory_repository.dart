@@ -24,6 +24,12 @@ abstract interface class InventoryRepository {
     required int branchId,
     required String barcode,
   });
+  Future<Item?> searchByBarcodeGlobal(String barcode);
+
+  Future<void> copyItemToBranch({
+    required Item sourceItem,
+    required int targetBranchId,
+  });
 
   Future<Item> updateItem({
     required int itemId,

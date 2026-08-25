@@ -105,6 +105,38 @@ class InventoryRepositoryImpl implements InventoryRepository {
   }
 
   @override
+  Future<Item?> searchByBarcodeGlobal(String barcode) async {
+    try {
+      final row = await _remote.searchByBarcodeGlobal(barcode);
+      return row == null ? null : Item.fromMap(row);
+    } catch (e) {
+      throw AppException(
+        'Global barcode lookup failed: $e',
+        AppExceptionType.network,
+      );
+    }
+  }
+
+  @override
+  Future<void> copyItemToBranch({
+    required Item sourceItem,
+    required int targetBranchId,
+  }) async {
+    try {
+      await _remote.insertItem(
+        branchId: targetBranchId,
+        name: sourceItem.name,
+        price: sourceItem.price ?? 0,
+        description: sourceItem.description,
+        barcode: sourceItem.barcode,
+        imageUrl: sourceItem.imageUrl,
+      );
+    } catch (e) {
+      throw AppException('Could not copy item: $e');
+    }
+  }
+
+  @override
   Future<Item> updateItem({
     required int itemId,
     required String name,

@@ -222,7 +222,10 @@ class _BranchItemsScreenState extends ConsumerState<BranchItemsScreen> {
         onPressed: () async {
           await Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (_) => BarcodeLookupScreen(branchId: widget.branchId),
+              builder: (_) => BarcodeLookupScreen(
+                branchId: widget.branchId,
+                branchName: widget.branchName,
+              ),
             ),
           );
           ref.invalidate(itemsProvider);

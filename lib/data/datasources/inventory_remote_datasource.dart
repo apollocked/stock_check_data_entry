@@ -85,4 +85,14 @@ class InventoryRemoteDatasource {
         .maybeSingle();
     return data;
   }
+
+  Future<Map<String, dynamic>?> searchByBarcodeGlobal(String barcode) async {
+    final data = await _client
+        .from('items')
+        .select('*, branches(name)')
+        .eq('barcode', barcode)
+        .limit(1)
+        .maybeSingle();
+    return data;
+  }
 }
