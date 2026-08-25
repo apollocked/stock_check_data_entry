@@ -20,5 +20,6 @@ abstract interface class InventoryRepository {
   });
 
   Future<List<Item>> fetchItems({int? branchId});
+  Future<Item?> searchByBarcode({required int branchId, required String barcode});
   Future<void> deleteItem(Item item);
 }

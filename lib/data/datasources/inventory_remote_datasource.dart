@@ -60,4 +60,17 @@ class InventoryRemoteDatasource {
   Future<void> deleteItem(int itemId) async {
     await _client.from('items').delete().eq('id', itemId);
   }
+
+  Future<Map<String, dynamic>?> searchByBarcode({
+    required int branchId,
+    required String barcode,
+  }) async {
+    final data = await _client
+        .from('items')
+        .select('*, branches(name)')
+        .eq('branch_id', branchId)
+        .eq('barcode', barcode)
+        .maybeSingle();
+    return data;
+  }
 }

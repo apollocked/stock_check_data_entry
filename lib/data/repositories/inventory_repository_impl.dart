@@ -89,6 +89,22 @@ class InventoryRepositoryImpl implements InventoryRepository {
   }
 
   @override
+  Future<Item?> searchByBarcode({
+    required int branchId,
+    required String barcode,
+  }) async {
+    try {
+      final row = await _remote.searchByBarcode(
+        branchId: branchId,
+        barcode: barcode,
+      );
+      return row == null ? null : Item.fromMap(row);
+    } catch (e) {
+      throw AppException('Barcode lookup failed: $e', AppExceptionType.network);
+    }
+  }
+
+  @override
   Future<void> deleteItem(Item item) async {
     try {
       await _remote.deleteItem(item.id);
