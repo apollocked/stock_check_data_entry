@@ -34,7 +34,6 @@ class _BranchListScreenState extends ConsumerState<BranchListScreen> {
     try {
       await Supabase.instance.client.auth.signOut();
     } finally {
-      ref.read(selectedBranchIdProvider.notifier).select(null);
       ref.invalidate(branchesProvider);
       ref.invalidate(itemsProvider);
     }

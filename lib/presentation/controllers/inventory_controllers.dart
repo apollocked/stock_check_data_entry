@@ -29,18 +29,6 @@ final branchesProvider =
       BranchesController.new,
     );
 
-class SelectedBranchIdController extends Notifier<int?> {
-  @override
-  int? build() => null;
-
-  void select(int? id) => state = id;
-}
-
-final selectedBranchIdProvider =
-    NotifierProvider<SelectedBranchIdController, int?>(
-      SelectedBranchIdController.new,
-    );
-
 final itemsProvider = FutureProvider.autoDispose.family<List<Item>, int?>(
   (ref, branchId) =>
       ref.watch(inventoryRepositoryProvider).fetchItems(branchId: branchId),
