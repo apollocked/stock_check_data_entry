@@ -57,8 +57,8 @@ class _ItemEntryScreenState extends ConsumerState<ItemEntryScreen> {
   }
 
   Future<void> _scanBarcode() async {
-    final code =
-        await Navigator.of(context).push<String>(BarcodeScanScreen.route());
+    final code = await Navigator.of(context)
+        .push<String>(BarcodeScanScreen.route());
     if (code != null && code.isNotEmpty) {
       _barcodeController.text = code;
     }
@@ -82,8 +82,9 @@ class _ItemEntryScreenState extends ConsumerState<ItemEntryScreen> {
             const SizedBox(height: 12),
             TextField(
               controller: locationController,
-              decoration:
-                  const InputDecoration(labelText: 'Location (optional)'),
+              decoration: const InputDecoration(
+                labelText: 'Location (optional)',
+              ),
             ),
           ],
         ),
@@ -186,156 +187,160 @@ class _ItemEntryScreenState extends ConsumerState<ItemEntryScreen> {
     final selectedBranchId = ref.watch(selectedBranchIdProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Add item')),
-      body: AbsorbPointer(
-        absorbing: _submitting,
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              branchesAsync.when(
-                loading: () => const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(8),
-                    child: CircularProgressIndicator(),
+      body: SafeArea(
+        child: AbsorbPointer(
+          absorbing: _submitting,
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                branchesAsync.when(
+                  loading: () => const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(8),
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+                  error: (error, _) => Row(
+                    children: [
+                      Expanded(child: Text('Failed to load branches: $error')),
+                      IconButton(
+                        icon: const Icon(Icons.refresh),
+                        onPressed: () => ref.invalidate(branchesProvider),
+                      ),
+                    ],
+                  ),
+                  data: (branches) => Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<int>(
+                          initialValue: selectedBranchId,
+                          decoration: const InputDecoration(
+                            labelText: 'Branch',
+                            prefixIcon: Icon(Icons.storefront),
+                          ),
+                          hint: const Text('Select branch'),
+                          items: [
+                            for (final branch in branches)
+                              DropdownMenuItem(
+                                value: branch.id,
+                                child: Text(branch.name),
+                              ),
+                          ],
+                          onChanged: (value) => ref
+                              .read(selectedBranchIdProvider.notifier)
+                              .select(value),
+                          validator: (value) =>
+                              value == null ? 'Branch is required' : null,
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'New branch',
+                        icon: _creatingBranch
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.add_business),
+                        onPressed: _creatingBranch
+                            ? null
+                            : _showAddBranchDialog,
+                      ),
+                    ],
                   ),
                 ),
-                error: (error, _) => Row(
-                  children: [
-                    Expanded(child: Text('Failed to load branches: $error')),
-                    IconButton(
-                      icon: const Icon(Icons.refresh),
-                      onPressed: () => ref.invalidate(branchesProvider),
-                    ),
-                  ],
-                ),
-                data: (branches) => Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<int>(
-                        initialValue: selectedBranchId,
-                        decoration: const InputDecoration(
-                          labelText: 'Branch',
-                          prefixIcon: Icon(Icons.storefront),
-                        ),
-                        hint: const Text('Select branch'),
-                        items: [
-                          for (final branch in branches)
-                            DropdownMenuItem(
-                              value: branch.id,
-                              child: Text(branch.name),
-                            ),
-                        ],
-                        onChanged: (value) => ref
-                            .read(selectedBranchIdProvider.notifier)
-                            .select(value),
-                        validator: (value) =>
-                            value == null ? 'Branch is required' : null,
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: 'New branch',
-                      icon: _creatingBranch
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.add_business),
-                      onPressed: _creatingBranch ? null : _showAddBranchDialog,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _nameController,
-                textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  labelText: 'Item name *',
-                  prefixIcon: Icon(Icons.inventory_2_outlined),
-                ),
-                validator: (value) =>
-                    (value == null || value.trim().isEmpty)
-                        ? 'Name is required'
-                        : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _priceController,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  labelText: 'Price *',
-                  prefixIcon: Icon(Icons.payments_outlined),
-                ),
-                validator: (value) {
-                  final parsed =
-                      double.tryParse(value?.trim() ?? '');
-                  if (parsed == null || parsed < 0) {
-                    return 'Enter a valid price';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _barcodeController,
-                keyboardType: TextInputType.text,
-                textInputAction: TextInputAction.next,
-                decoration: InputDecoration(
-                  labelText: 'Barcode',
-                  prefixIcon: const Icon(Icons.qr_code_2),
-                  suffixIcon: _scannerAvailable
-                      ? IconButton(
-                          tooltip: 'Scan barcode',
-                          icon: const Icon(Icons.qr_code_scanner),
-                          onPressed: _scanBarcode,
-                        )
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _nameController,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(
+                    labelText: 'Item name *',
+                    prefixIcon: Icon(Icons.inventory_2_outlined),
+                  ),
+                  validator: (value) => (value == null || value.trim().isEmpty)
+                      ? 'Name is required'
                       : null,
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _descriptionController,
-                maxLines: 3,
-                maxLength: 500,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  alignLabelWithHint: true,
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _priceController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(
+                    labelText: 'Price *',
+                    prefixIcon: Icon(Icons.payments_outlined),
+                  ),
+                  validator: (value) {
+                    final parsed = double.tryParse(value?.trim() ?? '');
+                    if (parsed == null || parsed < 0) {
+                      return 'Enter a valid price';
+                    }
+                    return null;
+                  },
                 ),
-              ),
-              const SizedBox(height: 8),
-              _ImagePickerCard(
-                image: _pickedImage,
-                onPickGallery: () => _pickImage(ImageSource.gallery),
-                onPickCamera: !_scannerAvailable
-                    ? null
-                    : () => _pickImage(ImageSource.camera),
-                onClear: _pickedImage == null
-                    ? null
-                    : () => setState(() => _pickedImage = null),
-              ),
-              const SizedBox(height: 24),
-              FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(52),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _barcodeController,
+                  keyboardType: TextInputType.text,
+                  textInputAction: TextInputAction.next,
+                  decoration: InputDecoration(
+                    labelText: 'Barcode',
+                    prefixIcon: const Icon(Icons.qr_code_2),
+                    suffixIcon: _scannerAvailable
+                        ? IconButton(
+                            tooltip: 'Scan barcode',
+                            icon: const Icon(Icons.qr_code_scanner),
+                            onPressed: _scanBarcode,
+                          )
+                        : null,
+                  ),
                 ),
-                onPressed: _submitting ? null : _submit,
-                icon: _submitting
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.save_outlined),
-                label: Text(_submitting ? 'Saving...' : 'Save item'),
-              ),
-              const SizedBox(height: 32),
-            ],
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _descriptionController,
+                  maxLines: 3,
+                  maxLength: 500,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    alignLabelWithHint: true,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _ImagePickerCard(
+                  image: _pickedImage,
+                  onPickGallery: () => _pickImage(ImageSource.gallery),
+                  onPickCamera: !_scannerAvailable
+                      ? null
+                      : () => _pickImage(ImageSource.camera),
+                  onClear: _pickedImage == null
+                      ? null
+                      : () => setState(() => _pickedImage = null),
+                ),
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(52),
+                  ),
+                  onPressed: _submitting ? null : _submit,
+                  icon: _submitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.save_outlined),
+                  label: Text(_submitting ? 'Saving...' : 'Save item'),
+                ),
+                const SizedBox(height: 32),
+              ],
+            ),
           ),
         ),
       ),
@@ -370,9 +375,11 @@ class _ImagePickerCard extends StatelessWidget {
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
             alignment: Alignment.center,
             child: image == null
-                ? Icon(Icons.image_outlined,
+                ? Icon(
+                    Icons.image_outlined,
                     size: 48,
-                    color: Theme.of(context).colorScheme.outline)
+                    color: Theme.of(context).colorScheme.outline,
+                  )
                 : Ink.image(
                     image: FileImage(File(image!.path)),
                     fit: BoxFit.cover,

@@ -26,7 +26,9 @@ class ImageStorageDatasource {
     final bytes = await imageFile.readAsBytes();
     final fileName =
         '${DateTime.now().microsecondsSinceEpoch}_${Random().nextInt(100000)}.$extension';
-    await _client.storage.from(_bucket).uploadBinary(
+    await _client.storage
+        .from(_bucket)
+        .uploadBinary(
           fileName,
           bytes,
           fileOptions: FileOptions(contentType: contentType),
@@ -41,9 +43,9 @@ class ImageStorageDatasource {
     final bucketIndex = segments.indexOf(_bucket);
     if (bucketIndex == -1 || bucketIndex + 1 >= segments.length) return;
     try {
-      await _client.storage
-          .from(_bucket)
-          .remove([segments.sublist(bucketIndex + 1).join('/')]);
+      await _client.storage.from(_bucket).remove([
+        segments.sublist(bucketIndex + 1).join('/'),
+      ]);
     } catch (_) {
       // Orphaned image is harmless; never block row deletion on this.
     }

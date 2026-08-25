@@ -5,9 +5,7 @@ class BarcodeScanScreen extends StatefulWidget {
   const BarcodeScanScreen({super.key});
 
   static Route<String> route() {
-    return MaterialPageRoute<String>(
-      builder: (_) => const BarcodeScanScreen(),
-    );
+    return MaterialPageRoute<String>(builder: (_) => const BarcodeScanScreen());
   }
 
   @override
@@ -40,9 +38,8 @@ class _BarcodeScanScreenState extends State<BarcodeScanScreen> {
               padding: const EdgeInsets.all(24),
               child: Text(
                 'Point the camera at a barcode',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Colors.white,
-                    ),
+                style: Theme.of(context).textTheme.bodyLarge
+                    ?.copyWith(color: Colors.white),
               ),
             ),
           ),

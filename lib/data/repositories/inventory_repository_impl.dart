@@ -19,7 +19,10 @@ class InventoryRepositoryImpl implements InventoryRepository {
       final rows = await _remote.fetchBranches();
       return [for (final row in rows) Branch.fromMap(row)];
     } catch (e) {
-      throw AppException('Could not load branches: $e', AppExceptionType.network);
+      throw AppException(
+        'Could not load branches: $e',
+        AppExceptionType.network,
+      );
     }
   }
 

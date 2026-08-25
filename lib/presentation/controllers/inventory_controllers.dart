@@ -14,8 +14,10 @@ class BranchesController extends AsyncNotifier<List<Branch>> {
 
   Future<Branch> create({required String name, String? location}) async {
     final repo = ref.read(inventoryRepositoryProvider);
-    final created =
-        await repo.createBranch(name: name.trim(), location: location?.trim());
+    final created = await repo.createBranch(
+      name: name.trim(),
+      location: location?.trim(),
+    );
     state = const AsyncLoading<List<Branch>>();
     state = await AsyncValue.guard(repo.fetchBranches);
     return created;
@@ -24,8 +26,8 @@ class BranchesController extends AsyncNotifier<List<Branch>> {
 
 final branchesProvider =
     AsyncNotifierProvider<BranchesController, List<Branch>>(
-  BranchesController.new,
-);
+      BranchesController.new,
+    );
 
 class SelectedBranchIdController extends Notifier<int?> {
   @override
@@ -36,8 +38,8 @@ class SelectedBranchIdController extends Notifier<int?> {
 
 final selectedBranchIdProvider =
     NotifierProvider<SelectedBranchIdController, int?>(
-  SelectedBranchIdController.new,
-);
+      SelectedBranchIdController.new,
+    );
 
 final itemsProvider = FutureProvider.autoDispose.family<List<Item>, int?>(
   (ref, branchId) =>

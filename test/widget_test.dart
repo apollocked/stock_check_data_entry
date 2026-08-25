@@ -4,11 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stock_check_entry/main.dart';
 
 void main() {
-  testWidgets('App renders entry screen', (WidgetTester tester) async {
-    await tester.pumpWidget(
-      const ProviderScope(child: StockCheckEntryApp()),
-    );
+  testWidgets('App shows login screen when signed out', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const ProviderScope(child: StockCheckEntryApp()));
     await tester.pump();
-    expect(find.text('Add item'), findsOneWidget);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sign in'), findsOneWidget);
+    expect(find.text('Email'), findsOneWidget);
   });
 }

@@ -84,171 +84,172 @@ class _ManagerExportScreenState extends ConsumerState<ManagerExportScreen> {
     final itemsAsync = ref.watch(itemsProvider(_branchFilter));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Manager export')),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: Row(
-              children: [
-                Expanded(
-                  child: branchesAsync.maybeWhen(
-                    data: (branches) => DropdownButtonFormField<int?>(
-                      initialValue: _branchFilter,
-                      decoration: const InputDecoration(
-                        labelText: 'Filter by branch',
-                        prefixIcon: Icon(Icons.filter_alt_outlined),
-                      ),
-                      items: [
-                        const DropdownMenuItem<int?>(
-                          value: null,
-                          child: Text('All branches'),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: branchesAsync.maybeWhen(
+                      data: (branches) => DropdownButtonFormField<int?>(
+                        initialValue: _branchFilter,
+                        decoration: const InputDecoration(
+                          labelText: 'Filter by branch',
+                          prefixIcon: Icon(Icons.filter_alt_outlined),
                         ),
-                        for (final branch in branches)
-                          DropdownMenuItem<int?>(
-                            value: branch.id,
-                            child: Text(branch.name),
+                        items: [
+                          const DropdownMenuItem<int?>(
+                            value: null,
+                            child: Text('All branches'),
                           ),
-                      ],
-                      onChanged: (value) =>
-                          setState(() => _branchFilter = value),
+                          for (final branch in branches)
+                            DropdownMenuItem<int?>(
+                              value: branch.id,
+                              child: Text(branch.name),
+                            ),
+                        ],
+                        onChanged: (value) =>
+                            setState(() => _branchFilter = value),
+                      ),
+                      orElse: () => const LinearProgressIndicator(),
                     ),
-                    orElse: () => const LinearProgressIndicator(),
+                  ),
+                  IconButton(
+                    tooltip: 'Refresh',
+                    icon: const Icon(Icons.refresh),
+                    onPressed: () => ref.invalidate(itemsProvider),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _exporting ? null : _exportCsv,
+                  icon: _exporting
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.ios_share),
+                  label: Text(_exporting ? 'Preparing CSV...' : 'Export CSV'),
+                ),
+              ),
+            ),
+            Expanded(
+              child: itemsAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, _) => Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Failed to load items:\n$error',
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      FilledButton.tonal(
+                        onPressed: () => ref.invalidate(itemsProvider),
+                        child: const Text('Retry'),
+                      ),
+                    ],
                   ),
                 ),
-                IconButton(
-                  tooltip: 'Refresh',
-                  icon: const Icon(Icons.refresh),
-                  onPressed: () => ref.invalidate(itemsProvider),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: _exporting ? null : _exportCsv,
-                icon: _exporting
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.ios_share),
-                label: Text(_exporting ? 'Preparing CSV...' : 'Export CSV'),
-              ),
-            ),
-          ),
-          Expanded(
-            child: itemsAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, _) => Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Failed to load items:\n$error',
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 12),
-                    FilledButton.tonal(
-                      onPressed: () => ref.invalidate(itemsProvider),
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              ),
-              data: (items) => RefreshIndicator(
-                onRefresh: () async {
-                  ref.invalidate(itemsProvider);
-                  await ref.read(itemsProvider(_branchFilter).future);
-                },
-                child: items.isEmpty
-                    ? ListView(
-                        children: const [
-                          SizedBox(height: 120),
-                          Icon(Icons.inventory_outlined, size: 56),
-                          SizedBox(height: 12),
-                          Center(child: Text('No items yet.')),
-                        ],
-                      )
-                    : ListView.separated(
-                        itemCount: items.length + 1,
-                        separatorBuilder: (_, _) => const Divider(height: 1),
-                        itemBuilder: (context, index) {
-                          if (index == items.length) {
-                            return Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Center(
-                                child: Text(
-                                  '${items.length} item(s)',
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .outline,
-                                      ),
+                data: (items) => RefreshIndicator(
+                  onRefresh: () async {
+                    ref.invalidate(itemsProvider);
+                    await ref.read(itemsProvider(_branchFilter).future);
+                  },
+                  child: items.isEmpty
+                      ? ListView(
+                          children: const [
+                            SizedBox(height: 120),
+                            Icon(Icons.inventory_outlined, size: 56),
+                            SizedBox(height: 12),
+                            Center(child: Text('No items yet.')),
+                          ],
+                        )
+                      : ListView.separated(
+                          itemCount: items.length + 1,
+                          separatorBuilder: (_, _) => const Divider(height: 1),
+                          itemBuilder: (context, index) {
+                            if (index == items.length) {
+                              return Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Center(
+                                  child: Text(
+                                    '${items.length} item(s)',
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .outline,
+                                        ),
+                                  ),
                                 ),
+                              );
+                            }
+                            final item = items[index];
+                            return ListTile(
+                              leading: item.imageUrl != null
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Image.network(
+                                        item.imageUrl!,
+                                        width: 48,
+                                        height: 48,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, _, _) =>
+                                            const Icon(Icons.broken_image),
+                                      ),
+                                    )
+                                  : CircleAvatar(
+                                      backgroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .surfaceContainerHighest,
+                                      child: const Icon(
+                                        Icons.image_not_supported,
+                                      ),
+                                    ),
+                              title: Text(item.name),
+                              subtitle: Text(
+                                '${item.branchName ?? 'Unknown branch'}'
+                                '${item.barcode == null ? '' : '  •  ${item.barcode}'}',
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    item.price == null
+                                        ? '-'
+                                        : item.price!.toStringAsFixed(2),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium,
+                                  ),
+                                  IconButton(
+                                    tooltip: 'Delete',
+                                    icon: const Icon(
+                                      Icons.delete_outline,
+                                      size: 20,
+                                    ),
+                                    onPressed: () => _confirmDelete(item),
+                                  ),
+                                ],
                               ),
                             );
-                          }
-                          final item = items[index];
-                          return ListTile(
-                            leading: item.imageUrl != null
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Image.network(
-                                      item.imageUrl!,
-                                      width: 48,
-                                      height: 48,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, _, _) =>
-                                          const Icon(Icons.broken_image),
-                                    ),
-                                  )
-                                : CircleAvatar(
-                                    backgroundColor: Theme.of(context)
-                                        .colorScheme
-                                        .surfaceContainerHighest,
-                                    child: const Icon(
-                                      Icons.image_not_supported,
-                                    ),
-                                  ),
-                            title: Text(item.name),
-                            subtitle: Text(
-                              '${item.branchName ?? 'Unknown branch'}'
-                              '${item.barcode == null ? '' : '  •  ${item.barcode}'}',
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  item.price == null
-                                      ? '-'
-                                      : item.price!.toStringAsFixed(2),
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium,
-                                ),
-                                IconButton(
-                                  tooltip: 'Delete',
-                                  icon: const Icon(
-                                    Icons.delete_outline,
-                                    size: 20,
-                                  ),
-                                  onPressed: () => _confirmDelete(item),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
+                          },
+                        ),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

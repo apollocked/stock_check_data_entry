@@ -4,7 +4,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/config.dart';
 import 'core/theme/app_theme.dart';
+import 'presentation/controllers/auth_controllers.dart';
 import 'presentation/screens/home_shell.dart';
+import 'presentation/screens/login_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,16 +17,47 @@ Future<void> main() async {
   runApp(const ProviderScope(child: StockCheckEntryApp()));
 }
 
-class StockCheckEntryApp extends StatelessWidget {
+class StockCheckEntryApp extends ConsumerWidget {
   const StockCheckEntryApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
       title: 'Stock Check Entry',
       debugShowCheckedModeBanner: false,
       theme: appTheme,
-      home: const HomeShell(),
+      home: ref
+          .watch(sessionStateProvider)
+          .when(
+            loading: () => const _Splash(),
+            data: (signedIn) =>
+                signedIn ? const HomeShell() : const LoginScreen(),
+            error: (_, _) => const LoginScreen(),
+          ),
+    );
+  }
+}
+
+class _Splash extends StatelessWidget {
+  const _Splash();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.storefront,
+              size: 56,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(height: 16),
+            const CircularProgressIndicator(),
+          ],
+        ),
+      ),
     );
   }
 }
