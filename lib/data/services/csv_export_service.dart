@@ -4,10 +4,11 @@ import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../domain/entities/branch.dart';
 import '../../domain/entities/item.dart';
 
 class CsvExportService {
-  static const _header = [
+  static const _standardHeaders = [
     'branch_name',
     'item_id',
     'name',
@@ -18,9 +19,28 @@ class CsvExportService {
     'created_at',
   ];
 
-  Future<File> buildCsvFile(List<Item> items) async {
+  Future<File> buildCsvFile(
+    List<Item> items,
+    List<BranchField> branchFields,
+  ) async {
+    final enabledCustom = branchFields
+        .where(
+          (f) =>
+              f.enabled &&
+              !const {
+                'name',
+                'price',
+                'description',
+                'barcode',
+                'image_url',
+              }.contains(f.id),
+        )
+        .toList();
+
+    final headers = [..._standardHeaders, for (final f in enabledCustom) f.id];
+
     final rows = <List<dynamic>>[
-      _header,
+      headers,
       for (final item in items)
         [
           item.branchName ?? '',
@@ -31,6 +51,8 @@ class CsvExportService {
           item.barcode ?? '',
           item.imageUrl ?? '',
           item.createdAt.toIso8601String(),
+          for (final f in enabledCustom)
+            item.customValue(f.id)?.toString() ?? '',
         ],
     ];
     final csvContent = const ListToCsvConverter().convert(rows);

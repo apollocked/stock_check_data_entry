@@ -5,13 +5,28 @@ import '../../domain/entities/branch.dart';
 const List<Map<String, dynamic>> kAvailableFields = [
   {'id': 'name', 'label': 'Name', 'type': 'text', 'required': true},
   {'id': 'price', 'label': 'Price', 'type': 'number', 'required': true},
-  {'id': 'description', 'label': 'Description', 'type': 'text', 'required': false},
+  {
+    'id': 'description',
+    'label': 'Description',
+    'type': 'text',
+    'required': false,
+  },
   {'id': 'barcode', 'label': 'Barcode', 'type': 'text', 'required': false},
   {'id': 'image_url', 'label': 'Image', 'type': 'image', 'required': false},
   {'id': 'category', 'label': 'Category', 'type': 'text', 'required': false},
   {'id': 'supplier', 'label': 'Supplier', 'type': 'text', 'required': false},
-  {'id': 'stock', 'label': 'Stock Quantity', 'type': 'number', 'required': false},
-  {'id': 'expiry_date', 'label': 'Expiry Date', 'type': 'text', 'required': false},
+  {
+    'id': 'stock',
+    'label': 'Stock Quantity',
+    'type': 'number',
+    'required': false,
+  },
+  {
+    'id': 'expiry_date',
+    'label': 'Expiry Date',
+    'type': 'text',
+    'required': false,
+  },
 ];
 
 class BranchFieldsScreen extends StatefulWidget {
@@ -80,9 +95,8 @@ class _BranchFieldsScreenState extends State<BranchFieldsScreen> {
           const SizedBox(height: 8),
           Text(
             'Required fields are always enabled.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.outline,
-                ),
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(color: Theme.of(context).colorScheme.outline),
           ),
           const SizedBox(height: 16),
           for (final f in kAvailableFields) ...[
@@ -137,8 +151,8 @@ class _FieldTile extends StatelessWidget {
     final typeLabel = type == 'image'
         ? '📷'
         : type == 'number'
-            ? '#'
-            : 'T';
+        ? '#'
+        : 'T';
 
     return Card(
       elevation: 0,
@@ -169,17 +183,13 @@ class _FieldTile extends StatelessWidget {
                   if (required)
                     Text(
                       'Required',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: cs.outline,
-                          ),
+                      style: Theme.of(context).textTheme.bodySmall
+                          ?.copyWith(color: cs.outline),
                     ),
                 ],
               ),
             ),
-            Switch(
-              value: enabled,
-              onChanged: required ? null : onChanged,
-            ),
+            Switch(value: enabled, onChanged: required ? null : onChanged),
           ],
         ),
       ),

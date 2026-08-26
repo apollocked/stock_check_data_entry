@@ -98,9 +98,10 @@ class _BranchListScreenState extends ConsumerState<BranchListScreen> {
     if (fields == null || !mounted) return;
 
     try {
-      final branchFields =
-          fields.cast<dynamic>(); // already List<BranchField>
-      await ref.read(branchesProvider.notifier).create(
+      final branchFields = fields.cast<dynamic>(); // already List<BranchField>
+      await ref
+          .read(branchesProvider.notifier)
+          .create(
             name: name,
             location: locationController.text.trim().isEmpty
                 ? null

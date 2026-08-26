@@ -126,10 +126,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
       );
       return row == null ? null : Item.fromMap(row);
     } catch (e) {
-      throw AppException(
-        'Barcode lookup failed: $e',
-        AppExceptionType.network,
-      );
+      throw AppException('Barcode lookup failed: $e', AppExceptionType.network);
     }
   }
 

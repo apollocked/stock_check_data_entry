@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import '../../domain/entities/branch.dart';
 import '../../domain/entities/item.dart';
 import '../providers/repository_providers.dart';
 import 'new_item_form_screen.dart';
@@ -12,11 +13,13 @@ import 'new_item_form_screen.dart';
 class BarcodeLookupScreen extends ConsumerStatefulWidget {
   final int branchId;
   final String branchName;
+  final List<BranchField> branchFields;
 
   const BarcodeLookupScreen({
     super.key,
     required this.branchId,
     required this.branchName,
+    this.branchFields = const [],
   });
 
   @override
@@ -137,6 +140,7 @@ class _BarcodeLookupScreenState extends ConsumerState<BarcodeLookupScreen> {
         builder: (_) => ItemFormScreen(
           branchId: widget.branchId,
           barcode: _barcodeController.text.trim(),
+          branchFields: widget.branchFields,
         ),
       ),
     );

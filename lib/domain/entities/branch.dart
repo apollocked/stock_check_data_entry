@@ -26,12 +26,12 @@ class BranchField {
   }
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'label': label,
-        'type': type,
-        'enabled': enabled,
-        'required': required,
-      };
+    'id': id,
+    'label': label,
+    'type': type,
+    'enabled': enabled,
+    'required': required,
+  };
 
   BranchField copyWith({bool? enabled}) {
     return BranchField(

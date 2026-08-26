@@ -35,7 +35,7 @@ class _BranchItemsScreenState extends ConsumerState<BranchItemsScreen> {
   }
 
   void _loadBranch() {
-    final branches = ref.read(branchesProvider).valueOrNull;
+    final branches = ref.read(branchesProvider).value;
     if (branches != null) {
       _branch = branches.where((b) => b.id == widget.branchId).firstOrNull;
     }
@@ -195,9 +195,9 @@ class _BranchItemsScreenState extends ConsumerState<BranchItemsScreen> {
                     : items
                           .where(
                             (i) =>
-                                i.name
-                                    .toLowerCase()
-                                    .contains(_searchQuery.toLowerCase()) ||
+                                i.name.toLowerCase().contains(
+                                  _searchQuery.toLowerCase(),
+                                ) ||
                                 (i.barcode?.contains(_searchQuery) ?? false),
                           )
                           .toList();
@@ -229,8 +229,7 @@ class _BranchItemsScreenState extends ConsumerState<BranchItemsScreen> {
                       : ListView.separated(
                           padding: const EdgeInsets.all(12),
                           itemCount: filtered.length,
-                          separatorBuilder: (_, _) =>
-                              const SizedBox(height: 6),
+                          separatorBuilder: (_, _) => const SizedBox(height: 6),
                           itemBuilder: (context, index) {
                             final item = filtered[index];
                             return _ItemCard(
@@ -286,10 +285,17 @@ class _ItemCard extends StatelessWidget {
 
     // Get optional field values for display
     final optionalFields = branchFields
-        .where((f) =>
-            f.enabled &&
-            !const {'name', 'price', 'description', 'barcode', 'image_url'}
-                .contains(f.id))
+        .where(
+          (f) =>
+              f.enabled &&
+              !const {
+                'name',
+                'price',
+                'description',
+                'barcode',
+                'image_url',
+              }.contains(f.id),
+        )
         .toList();
 
     return Card(
@@ -351,9 +357,7 @@ class _ItemCard extends StatelessWidget {
                     if (item.barcode != null)
                       Text(
                         item.barcode!,
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodySmall
+                        style: Theme.of(context).textTheme.bodySmall
                             ?.copyWith(color: cs.outline),
                       ),
                   ],
@@ -362,9 +366,7 @@ class _ItemCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 item.price == null ? '-' : item.price!.toStringAsFixed(2),
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
+                style: Theme.of(context).textTheme.titleMedium
                     ?.copyWith(fontWeight: FontWeight.bold),
               ),
             ],
@@ -383,9 +385,8 @@ class _ItemCard extends StatelessWidget {
         '${field.label}: $val',
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.outline,
-            ),
+        style: Theme.of(context).textTheme.bodySmall
+            ?.copyWith(color: Theme.of(context).colorScheme.outline),
       ),
     );
   }

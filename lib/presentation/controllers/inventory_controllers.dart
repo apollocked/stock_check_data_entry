@@ -28,7 +28,7 @@ class BranchesController extends AsyncNotifier<List<Branch>> {
     return created;
   }
 
-  Future<void> update(int branchId, Map<String, dynamic> updates) async {
+  Future<void> updateBranch(int branchId, Map<String, dynamic> updates) async {
     final repo = ref.read(inventoryRepositoryProvider);
     await repo.updateBranch(branchId: branchId, updates: updates);
     state = await AsyncValue.guard(repo.fetchBranches);

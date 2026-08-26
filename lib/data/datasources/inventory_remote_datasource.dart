@@ -68,11 +68,7 @@ class InventoryRemoteDatasource {
     if (customFields != null && customFields.isNotEmpty) {
       row['custom_fields'] = jsonEncode(customFields);
     }
-    return _client
-        .from('items')
-        .insert(row)
-        .select(_itemColumns)
-        .single();
+    return _client.from('items').insert(row).select(_itemColumns).single();
   }
 
   Future<List<Map<String, dynamic>>> fetchItems({int? branchId}) async {

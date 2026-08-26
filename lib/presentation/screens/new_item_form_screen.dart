@@ -45,8 +45,7 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
   List<BranchField> get _enabledFields =>
       widget.branchFields.where((f) => f.enabled).toList();
 
-  bool _hasField(String id) =>
-      _enabledFields.any((f) => f.id == id);
+  bool _hasField(String id) => _enabledFields.any((f) => f.id == id);
 
   ImagePicker get _picker => ImagePicker();
 
@@ -64,8 +63,13 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
     _existingImageUrl = item?.imageUrl;
 
     for (final f in _enabledFields) {
-      if (!const {'name', 'price', 'description', 'barcode', 'image_url'}
-          .contains(f.id)) {
+      if (!const {
+        'name',
+        'price',
+        'description',
+        'barcode',
+        'image_url',
+      }.contains(f.id)) {
         _customControllers[f.id] = TextEditingController(
           text: item?.customValue(f.id)?.toString() ?? '',
         );
@@ -101,8 +105,13 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
   Map<String, dynamic> _collectCustomFields() {
     final result = <String, dynamic>{};
     for (final f in _enabledFields) {
-      if (const {'name', 'price', 'description', 'barcode', 'image_url'}
-          .contains(f.id)) {
+      if (const {
+        'name',
+        'price',
+        'description',
+        'barcode',
+        'image_url',
+      }.contains(f.id)) {
         continue;
       }
       final ctrl = _customControllers[f.id];
@@ -142,7 +151,8 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
           itemId: widget.existingItem!.id,
           name: _nameController.text.trim(),
           price: double.parse(_priceController.text.trim()),
-          description: _hasField('description') &&
+          description:
+              _hasField('description') &&
                   _descriptionController.text.trim().isNotEmpty
               ? _descriptionController.text.trim()
               : null,
@@ -154,7 +164,8 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
           branchId: widget.branchId,
           name: _nameController.text.trim(),
           price: double.parse(_priceController.text.trim()),
-          description: _hasField('description') &&
+          description:
+              _hasField('description') &&
                   _descriptionController.text.trim().isNotEmpty
               ? _descriptionController.text.trim()
               : null,
@@ -255,8 +266,13 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
                 ),
               // Custom fields
               for (final f in _enabledFields)
-                if (!const {'name', 'price', 'description', 'barcode', 'image_url'}
-                    .contains(f.id)) ...[
+                if (!const {
+                  'name',
+                  'price',
+                  'description',
+                  'barcode',
+                  'image_url',
+                }.contains(f.id)) ...[
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _customControllers[f.id],
@@ -280,8 +296,8 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
                   onPickGallery: () => _pickImage(ImageSource.gallery),
                   onPickCamera:
                       !kIsWeb && (Platform.isAndroid || Platform.isIOS)
-                          ? () => _pickImage(ImageSource.camera)
-                          : null,
+                      ? () => _pickImage(ImageSource.camera)
+                      : null,
                   onClear: _pickedImage == null && _existingImageUrl == null
                       ? null
                       : () => setState(() {
@@ -306,8 +322,8 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
                   _submitting
                       ? 'Saving...'
                       : _isEditMode
-                          ? 'Update item'
-                          : 'Save item',
+                      ? 'Update item'
+                      : 'Save item',
                 ),
               ),
               const SizedBox(height: 32),
@@ -357,22 +373,22 @@ class _ImagePickerCard extends StatelessWidget {
                     height: 180,
                   )
                 : existingImageUrl != null
-                    ? Image.network(
-                        existingImageUrl!,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: 180,
-                        errorBuilder: (_, _, _) => Icon(
-                          Icons.broken_image,
-                          size: 48,
-                          color: Theme.of(context).colorScheme.outline,
-                        ),
-                      )
-                    : Icon(
-                        Icons.add_a_photo_outlined,
-                        size: 48,
-                        color: Theme.of(context).colorScheme.outline,
-                      ),
+                ? Image.network(
+                    existingImageUrl!,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: 180,
+                    errorBuilder: (_, _, _) => Icon(
+                      Icons.broken_image,
+                      size: 48,
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+                  )
+                : Icon(
+                    Icons.add_a_photo_outlined,
+                    size: 48,
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
           ),
           Padding(
             padding: const EdgeInsets.all(4),
