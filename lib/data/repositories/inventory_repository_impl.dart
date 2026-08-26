@@ -27,12 +27,36 @@ class InventoryRepositoryImpl implements InventoryRepository {
   }
 
   @override
-  Future<Branch> createBranch({required String name, String? location}) async {
+  Future<Branch> createBranch({
+    required String name,
+    String? location,
+    required List<BranchField> fields,
+  }) async {
     try {
-      final row = await _remote.createBranch(name: name, location: location);
+      final row = await _remote.createBranch(
+        name: name,
+        location: location,
+        fields: [for (final f in fields) f.toMap()],
+      );
       return Branch.fromMap(row);
     } catch (e) {
       throw AppException('Could not create branch: $e');
+    }
+  }
+
+  @override
+  Future<Branch> updateBranch({
+    required int branchId,
+    required Map<String, dynamic> updates,
+  }) async {
+    try {
+      final row = await _remote.updateBranch(
+        branchId: branchId,
+        updates: updates,
+      );
+      return Branch.fromMap(row);
+    } catch (e) {
+      throw AppException('Could not update branch: $e');
     }
   }
 
@@ -62,6 +86,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
     String? description,
     String? barcode,
     String? imageUrl,
+    Map<String, dynamic>? customFields,
   }) async {
     try {
       final row = await _remote.insertItem(
@@ -71,6 +96,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
         description: description,
         barcode: barcode,
         imageUrl: imageUrl,
+        customFields: customFields,
       );
       return Item.fromMap(row);
     } catch (e) {
@@ -100,7 +126,10 @@ class InventoryRepositoryImpl implements InventoryRepository {
       );
       return row == null ? null : Item.fromMap(row);
     } catch (e) {
-      throw AppException('Barcode lookup failed: $e', AppExceptionType.network);
+      throw AppException(
+        'Barcode lookup failed: $e',
+        AppExceptionType.network,
+      );
     }
   }
 
@@ -130,6 +159,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
         description: sourceItem.description,
         barcode: sourceItem.barcode,
         imageUrl: sourceItem.imageUrl,
+        customFields: sourceItem.customFields,
       );
     } catch (e) {
       throw AppException('Could not copy item: $e');
@@ -143,6 +173,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
     required double price,
     String? description,
     String? imageUrl,
+    Map<String, dynamic>? customFields,
   }) async {
     try {
       final row = await _remote.updateItem(
@@ -152,6 +183,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
           'price': price,
           'description': description,
           'image_url': imageUrl,
+          'custom_fields': customFields ?? {},
         },
       );
       return Item.fromMap(row);

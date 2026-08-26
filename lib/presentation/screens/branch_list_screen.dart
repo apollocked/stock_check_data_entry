@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../controllers/inventory_controllers.dart';
+import 'branch_fields_screen.dart';
 import 'branch_items_screen.dart';
 
 class BranchListScreen extends ConsumerStatefulWidget {
@@ -70,7 +71,7 @@ class _BranchListScreenState extends ConsumerState<BranchListScreen> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Create'),
+            child: const Text('Next'),
           ),
         ],
       ),
@@ -83,10 +84,29 @@ class _BranchListScreenState extends ConsumerState<BranchListScreen> {
       ).showSnackBar(const SnackBar(content: Text('Branch name is required')));
       return;
     }
+
+    final fields = await Navigator.of(context).push<List<dynamic>>(
+      MaterialPageRoute(
+        builder: (_) => BranchFieldsScreen(
+          branchName: name,
+          location: locationController.text.trim().isEmpty
+              ? null
+              : locationController.text.trim(),
+        ),
+      ),
+    );
+    if (fields == null || !mounted) return;
+
     try {
-      await ref
-          .read(branchesProvider.notifier)
-          .create(name: name, location: locationController.text);
+      final branchFields =
+          fields.cast<dynamic>(); // already List<BranchField>
+      await ref.read(branchesProvider.notifier).create(
+            name: name,
+            location: locationController.text.trim().isEmpty
+                ? null
+                : locationController.text.trim(),
+            fields: branchFields.cast(),
+          );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)

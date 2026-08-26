@@ -5,7 +5,15 @@ import '../entities/item.dart';
 
 abstract interface class InventoryRepository {
   Future<List<Branch>> fetchBranches();
-  Future<Branch> createBranch({required String name, String? location});
+  Future<Branch> createBranch({
+    required String name,
+    String? location,
+    required List<BranchField> fields,
+  });
+  Future<Branch> updateBranch({
+    required int branchId,
+    required Map<String, dynamic> updates,
+  });
   Future<void> deleteBranch(int branchId);
 
   Future<String> uploadItemImage(XFile imageFile, {String? barcode});
@@ -17,6 +25,7 @@ abstract interface class InventoryRepository {
     String? description,
     String? barcode,
     String? imageUrl,
+    Map<String, dynamic>? customFields,
   });
 
   Future<List<Item>> fetchItems({int? branchId});
@@ -37,6 +46,7 @@ abstract interface class InventoryRepository {
     required double price,
     String? description,
     String? imageUrl,
+    Map<String, dynamic>? customFields,
   });
 
   Future<void> deleteItem(Item item);

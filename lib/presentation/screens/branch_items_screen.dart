@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../domain/entities/branch.dart';
 import '../../domain/entities/item.dart';
 import '../controllers/inventory_controllers.dart';
 import '../providers/repository_providers.dart';
@@ -25,6 +26,23 @@ class _BranchItemsScreenState extends ConsumerState<BranchItemsScreen> {
   bool _exporting = false;
   String _searchQuery = '';
 
+  Branch? _branch;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBranch();
+  }
+
+  void _loadBranch() {
+    final branches = ref.read(branchesProvider).valueOrNull;
+    if (branches != null) {
+      _branch = branches.where((b) => b.id == widget.branchId).firstOrNull;
+    }
+  }
+
+  List<BranchField> get _branchFields => _branch?.fields ?? const [];
+
   Future<void> _exportCsv(List<Item> items) async {
     setState(() => _exporting = true);
     try {
@@ -33,7 +51,7 @@ class _BranchItemsScreenState extends ConsumerState<BranchItemsScreen> {
         return;
       }
       final csvService = ref.read(csvExportServiceProvider);
-      final file = await csvService.buildCsvFile(items);
+      final file = await csvService.buildCsvFile(items, _branchFields);
       await csvService.share(file);
       if (mounted) {
         _showSnackBar('Exported ${items.length} items. Saved to: ${file.path}');
@@ -80,6 +98,7 @@ class _BranchItemsScreenState extends ConsumerState<BranchItemsScreen> {
           branchId: widget.branchId,
           barcode: item.barcode ?? '',
           existingItem: item,
+          branchFields: _branchFields,
         ),
       ),
     );
@@ -101,6 +120,14 @@ class _BranchItemsScreenState extends ConsumerState<BranchItemsScreen> {
   @override
   Widget build(BuildContext context) {
     final itemsAsync = ref.watch(itemsProvider(widget.branchId));
+
+    // Re-check branch when branches reload
+    ref.listen(branchesProvider, (_, next) {
+      next.whenData((branches) {
+        final b = branches.where((b) => b.id == widget.branchId).firstOrNull;
+        if (b != null && b != _branch) setState(() => _branch = b);
+      });
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -168,9 +195,9 @@ class _BranchItemsScreenState extends ConsumerState<BranchItemsScreen> {
                     : items
                           .where(
                             (i) =>
-                                i.name.toLowerCase().contains(
-                                  _searchQuery.toLowerCase(),
-                                ) ||
+                                i.name
+                                    .toLowerCase()
+                                    .contains(_searchQuery.toLowerCase()) ||
                                 (i.barcode?.contains(_searchQuery) ?? false),
                           )
                           .toList();
@@ -202,11 +229,13 @@ class _BranchItemsScreenState extends ConsumerState<BranchItemsScreen> {
                       : ListView.separated(
                           padding: const EdgeInsets.all(12),
                           itemCount: filtered.length,
-                          separatorBuilder: (_, _) => const SizedBox(height: 6),
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: 6),
                           itemBuilder: (context, index) {
                             final item = filtered[index];
                             return _ItemCard(
                               item: item,
+                              branchFields: _branchFields,
                               onTap: () => _editItem(item),
                               onDelete: () => _confirmDelete(item),
                             );
@@ -225,6 +254,7 @@ class _BranchItemsScreenState extends ConsumerState<BranchItemsScreen> {
               builder: (_) => BarcodeLookupScreen(
                 branchId: widget.branchId,
                 branchName: widget.branchName,
+                branchFields: _branchFields,
               ),
             ),
           );
@@ -239,11 +269,13 @@ class _BranchItemsScreenState extends ConsumerState<BranchItemsScreen> {
 
 class _ItemCard extends StatelessWidget {
   final Item item;
+  final List<BranchField> branchFields;
   final VoidCallback onTap;
   final VoidCallback onDelete;
 
   const _ItemCard({
     required this.item,
+    required this.branchFields,
     required this.onTap,
     required this.onDelete,
   });
@@ -251,6 +283,14 @@ class _ItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+
+    // Get optional field values for display
+    final optionalFields = branchFields
+        .where((f) =>
+            f.enabled &&
+            !const {'name', 'price', 'description', 'barcode', 'image_url'}
+                .contains(f.id))
+        .toList();
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -298,7 +338,6 @@ class _ItemCard extends StatelessWidget {
                       item.name,
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
-                    const SizedBox(height: 2),
                     if (item.description != null &&
                         item.description!.isNotEmpty)
                       Text(
@@ -307,10 +346,14 @@ class _ItemCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
+                    for (final f in optionalFields)
+                      _customFieldChip(item, f, context),
                     if (item.barcode != null)
                       Text(
                         item.barcode!,
-                        style: Theme.of(context).textTheme.bodySmall
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
                             ?.copyWith(color: cs.outline),
                       ),
                   ],
@@ -319,12 +362,30 @@ class _ItemCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 item.price == null ? '-' : item.price!.toStringAsFixed(2),
-                style: Theme.of(context).textTheme.titleMedium
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
                     ?.copyWith(fontWeight: FontWeight.bold),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _customFieldChip(Item item, BranchField field, BuildContext context) {
+    final val = item.customValue(field.id);
+    if (val == null || val.toString().isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Text(
+        '${field.label}: $val',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.outline,
+            ),
       ),
     );
   }

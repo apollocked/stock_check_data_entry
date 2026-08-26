@@ -12,15 +12,26 @@ class BranchesController extends AsyncNotifier<List<Branch>> {
     return ref.watch(inventoryRepositoryProvider).fetchBranches();
   }
 
-  Future<Branch> create({required String name, String? location}) async {
+  Future<Branch> create({
+    required String name,
+    String? location,
+    required List<BranchField> fields,
+  }) async {
     final repo = ref.read(inventoryRepositoryProvider);
     final created = await repo.createBranch(
       name: name.trim(),
       location: location?.trim(),
+      fields: fields,
     );
     state = const AsyncLoading<List<Branch>>();
     state = await AsyncValue.guard(repo.fetchBranches);
     return created;
+  }
+
+  Future<void> update(int branchId, Map<String, dynamic> updates) async {
+    final repo = ref.read(inventoryRepositoryProvider);
+    await repo.updateBranch(branchId: branchId, updates: updates);
+    state = await AsyncValue.guard(repo.fetchBranches);
   }
 }
 

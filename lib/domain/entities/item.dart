@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class Item {
   final int id;
   final int branchId;
@@ -7,6 +9,7 @@ class Item {
   final double? price;
   final String? barcode;
   final String? imageUrl;
+  final Map<String, dynamic> customFields;
   final DateTime createdAt;
 
   const Item({
@@ -18,11 +21,23 @@ class Item {
     this.price,
     this.barcode,
     this.imageUrl,
+    this.customFields = const {},
     required this.createdAt,
   });
 
   factory Item.fromMap(Map<String, dynamic> map) {
     final rawPrice = map['price'];
+
+    Map<String, dynamic> parsedCustom = {};
+    final rawCustom = map['custom_fields'];
+    if (rawCustom is String) {
+      try {
+        parsedCustom = jsonDecode(rawCustom) as Map<String, dynamic>;
+      } catch (_) {}
+    } else if (rawCustom is Map) {
+      parsedCustom = Map<String, dynamic>.from(rawCustom);
+    }
+
     return Item(
       id: map['id'] as int,
       branchId: map['branch_id'] as int,
@@ -33,7 +48,10 @@ class Item {
       price: rawPrice == null ? null : double.parse(rawPrice.toString()),
       barcode: map['barcode'] as String?,
       imageUrl: map['image_url'] as String?,
+      customFields: parsedCustom,
       createdAt: DateTime.parse(map['created_at'] as String),
     );
   }
+
+  dynamic customValue(String fieldId) => customFields[fieldId];
 }

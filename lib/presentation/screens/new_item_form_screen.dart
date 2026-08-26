@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/error/app_exception.dart';
+import '../../domain/entities/branch.dart';
 import '../../domain/entities/item.dart';
 import '../providers/repository_providers.dart';
 
@@ -13,12 +14,14 @@ class ItemFormScreen extends ConsumerStatefulWidget {
   final int branchId;
   final String barcode;
   final Item? existingItem;
+  final List<BranchField> branchFields;
 
   const ItemFormScreen({
     super.key,
     required this.branchId,
     required this.barcode,
     this.existingItem,
+    this.branchFields = const [],
   });
 
   @override
@@ -31,11 +34,19 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
   late final TextEditingController _priceController;
   late final TextEditingController _descriptionController;
 
+  final Map<String, TextEditingController> _customControllers = {};
+
   XFile? _pickedImage;
   String? _existingImageUrl;
   bool _submitting = false;
 
   bool get _isEditMode => widget.existingItem != null;
+
+  List<BranchField> get _enabledFields =>
+      widget.branchFields.where((f) => f.enabled).toList();
+
+  bool _hasField(String id) =>
+      _enabledFields.any((f) => f.id == id);
 
   ImagePicker get _picker => ImagePicker();
 
@@ -51,6 +62,15 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
       text: item?.description ?? '',
     );
     _existingImageUrl = item?.imageUrl;
+
+    for (final f in _enabledFields) {
+      if (!const {'name', 'price', 'description', 'barcode', 'image_url'}
+          .contains(f.id)) {
+        _customControllers[f.id] = TextEditingController(
+          text: item?.customValue(f.id)?.toString() ?? '',
+        );
+      }
+    }
   }
 
   @override
@@ -58,6 +78,9 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
     _nameController.dispose();
     _priceController.dispose();
     _descriptionController.dispose();
+    for (final c in _customControllers.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -75,10 +98,26 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
     }
   }
 
+  Map<String, dynamic> _collectCustomFields() {
+    final result = <String, dynamic>{};
+    for (final f in _enabledFields) {
+      if (const {'name', 'price', 'description', 'barcode', 'image_url'}
+          .contains(f.id)) {
+        continue;
+      }
+      final ctrl = _customControllers[f.id];
+      if (ctrl != null && ctrl.text.trim().isNotEmpty) {
+        final val = ctrl.text.trim();
+        result[f.id] = f.type == 'number' ? (num.tryParse(val) ?? val) : val;
+      }
+    }
+    return result;
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (!_isEditMode && _pickedImage == null) {
+    if (!_isEditMode && _hasField('image_url') && _pickedImage == null) {
       _showSnackBar('Please add a photo of the item', isError: true);
       return;
     }
@@ -96,26 +135,32 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
         );
       }
 
+      final custom = _collectCustomFields();
+
       if (_isEditMode) {
         await repo.updateItem(
           itemId: widget.existingItem!.id,
           name: _nameController.text.trim(),
           price: double.parse(_priceController.text.trim()),
-          description: _descriptionController.text.trim().isEmpty
-              ? null
-              : _descriptionController.text.trim(),
+          description: _hasField('description') &&
+                  _descriptionController.text.trim().isNotEmpty
+              ? _descriptionController.text.trim()
+              : null,
           imageUrl: imageUrl,
+          customFields: custom,
         );
       } else {
         await repo.insertItem(
           branchId: widget.branchId,
           name: _nameController.text.trim(),
           price: double.parse(_priceController.text.trim()),
-          description: _descriptionController.text.trim().isEmpty
-              ? null
-              : _descriptionController.text.trim(),
+          description: _hasField('description') &&
+                  _descriptionController.text.trim().isNotEmpty
+              ? _descriptionController.text.trim()
+              : null,
           barcode: widget.barcode.isEmpty ? null : widget.barcode,
           imageUrl: imageUrl,
+          customFields: custom,
         );
       }
 
@@ -156,67 +201,94 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              TextFormField(
-                initialValue: widget.barcode,
-                readOnly: true,
-                decoration: const InputDecoration(
-                  labelText: 'Barcode',
-                  prefixIcon: Icon(Icons.qr_code_2),
+              if (_hasField('barcode')) ...[
+                TextFormField(
+                  initialValue: widget.barcode,
+                  readOnly: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Barcode',
+                    prefixIcon: Icon(Icons.qr_code_2),
+                  ),
                 ),
-              ),
+                const SizedBox(height: 16),
+              ],
+              if (_hasField('name'))
+                TextFormField(
+                  controller: _nameController,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(
+                    labelText: 'Item name *',
+                    prefixIcon: Icon(Icons.inventory_2_outlined),
+                  ),
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Name is required'
+                      : null,
+                ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _nameController,
-                textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  labelText: 'Item name *',
-                  prefixIcon: Icon(Icons.inventory_2_outlined),
+              if (_hasField('price'))
+                TextFormField(
+                  controller: _priceController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(
+                    labelText: 'Price *',
+                    prefixIcon: Icon(Icons.payments_outlined),
+                  ),
+                  validator: (v) {
+                    final p = double.tryParse(v?.trim() ?? '');
+                    if (p == null || p < 0) return 'Enter a valid price';
+                    return null;
+                  },
                 ),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Name is required' : null,
-              ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _priceController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
+              if (_hasField('description'))
+                TextFormField(
+                  controller: _descriptionController,
+                  maxLines: 3,
+                  maxLength: 500,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    alignLabelWithHint: true,
+                  ),
                 ),
-                textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  labelText: 'Price *',
-                  prefixIcon: Icon(Icons.payments_outlined),
-                ),
-                validator: (v) {
-                  final p = double.tryParse(v?.trim() ?? '');
-                  if (p == null || p < 0) return 'Enter a valid price';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _descriptionController,
-                maxLines: 3,
-                maxLength: 500,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  alignLabelWithHint: true,
-                ),
-              ),
+              // Custom fields
+              for (final f in _enabledFields)
+                if (!const {'name', 'price', 'description', 'barcode', 'image_url'}
+                    .contains(f.id)) ...[
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _customControllers[f.id],
+                    keyboardType: f.type == 'number'
+                        ? const TextInputType.numberWithOptions(decimal: true)
+                        : TextInputType.text,
+                    textInputAction: TextInputAction.next,
+                    decoration: InputDecoration(
+                      labelText: f.label,
+                      prefixIcon: Icon(
+                        f.type == 'number' ? Icons.numbers : Icons.edit_note,
+                      ),
+                    ),
+                  ),
+                ],
               const SizedBox(height: 8),
-              _ImagePickerCard(
-                image: _pickedImage,
-                existingImageUrl: _isEditMode ? _existingImageUrl : null,
-                onPickGallery: () => _pickImage(ImageSource.gallery),
-                onPickCamera: !kIsWeb && (Platform.isAndroid || Platform.isIOS)
-                    ? () => _pickImage(ImageSource.camera)
-                    : null,
-                onClear: _pickedImage == null && _existingImageUrl == null
-                    ? null
-                    : () => setState(() {
-                        _pickedImage = null;
-                        _existingImageUrl = null;
-                      }),
-              ),
+              if (_hasField('image_url'))
+                _ImagePickerCard(
+                  image: _pickedImage,
+                  existingImageUrl: _isEditMode ? _existingImageUrl : null,
+                  onPickGallery: () => _pickImage(ImageSource.gallery),
+                  onPickCamera:
+                      !kIsWeb && (Platform.isAndroid || Platform.isIOS)
+                          ? () => _pickImage(ImageSource.camera)
+                          : null,
+                  onClear: _pickedImage == null && _existingImageUrl == null
+                      ? null
+                      : () => setState(() {
+                          _pickedImage = null;
+                          _existingImageUrl = null;
+                        }),
+                ),
               const SizedBox(height: 24),
               FilledButton.icon(
                 style: FilledButton.styleFrom(
@@ -234,8 +306,8 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
                   _submitting
                       ? 'Saving...'
                       : _isEditMode
-                      ? 'Update item'
-                      : 'Save item',
+                          ? 'Update item'
+                          : 'Save item',
                 ),
               ),
               const SizedBox(height: 32),
@@ -285,22 +357,22 @@ class _ImagePickerCard extends StatelessWidget {
                     height: 180,
                   )
                 : existingImageUrl != null
-                ? Image.network(
-                    existingImageUrl!,
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: 180,
-                    errorBuilder: (_, _, _) => Icon(
-                      Icons.broken_image,
-                      size: 48,
-                      color: Theme.of(context).colorScheme.outline,
-                    ),
-                  )
-                : Icon(
-                    Icons.add_a_photo_outlined,
-                    size: 48,
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
+                    ? Image.network(
+                        existingImageUrl!,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: 180,
+                        errorBuilder: (_, _, _) => Icon(
+                          Icons.broken_image,
+                          size: 48,
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                      )
+                    : Icon(
+                        Icons.add_a_photo_outlined,
+                        size: 48,
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
           ),
           Padding(
             padding: const EdgeInsets.all(4),
