@@ -24,14 +24,14 @@ class BarcodeLookupScreen extends ConsumerStatefulWidget {
       _BarcodeLookupScreenState();
 }
 
-enum _LookupState { idle, loading, foundLocal, foundGlobal, notFound }
+enum _LookupState { idle, loading, results }
 
 class _BarcodeLookupScreenState extends ConsumerState<BarcodeLookupScreen> {
   final _barcodeController = TextEditingController();
   bool _scanAvailable = true;
   _LookupState _state = _LookupState.idle;
   Item? _localItem;
-  Item? _globalItem;
+  List<Item> _otherBranchItems = [];
   bool _copying = false;
 
   @override
@@ -55,41 +55,36 @@ class _BarcodeLookupScreenState extends ConsumerState<BarcodeLookupScreen> {
     setState(() {
       _state = _LookupState.loading;
       _localItem = null;
-      _globalItem = null;
+      _otherBranchItems = [];
     });
 
     final repo = ref.read(inventoryRepositoryProvider);
 
     try {
-      // Step 1: check current branch
-      final local = await repo.searchByBarcode(
+      // Search current branch AND all other branches in parallel
+      final localFuture = repo.searchByBarcode(
         branchId: widget.branchId,
         barcode: barcode.trim(),
       );
+      final globalFuture = repo.searchByBarcodeGlobal(barcode.trim());
+
+      final results = await Future.wait<Item?>([localFuture, globalFuture]);
       if (!mounted) return;
 
-      if (local != null) {
-        setState(() {
-          _localItem = local;
-          _state = _LookupState.foundLocal;
-        });
-        return;
+      final local = results[0];
+      final global = results[1];
+
+      // Build list of other-branch items (exclude the local one)
+      final others = <Item>[];
+      if (global != null && global.branchId != widget.branchId) {
+        others.add(global);
       }
 
-      // Step 2: check all other branches
-      final global = await repo.searchByBarcodeGlobal(barcode.trim());
-      if (!mounted) return;
-
-      if (global != null) {
-        setState(() {
-          _globalItem = global;
-          _state = _LookupState.foundGlobal;
-        });
-        return;
-      }
-
-      // Step 3: not found anywhere
-      setState(() => _state = _LookupState.notFound);
+      setState(() {
+        _localItem = local;
+        _otherBranchItems = others;
+        _state = _LookupState.results;
+      });
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
@@ -99,25 +94,22 @@ class _BarcodeLookupScreenState extends ConsumerState<BarcodeLookupScreen> {
     }
   }
 
-  Future<void> _copyToBranch() async {
-    if (_globalItem == null) return;
+  Future<void> _copyToBranch(Item sourceItem) async {
     setState(() => _copying = true);
     try {
       await ref
           .read(inventoryRepositoryProvider)
           .copyItemToBranch(
-            sourceItem: _globalItem!,
+            sourceItem: sourceItem,
             targetBranchId: widget.branchId,
           );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            '"${_globalItem!.name}" copied to ${widget.branchName}',
-          ),
+          content: Text('"${sourceItem.name}" copied to ${widget.branchName}'),
         ),
       );
-      // Re-lookup to show the item as "found local" now
+      // Re-lookup to refresh the local item
       _lookup(_barcodeController.text.trim());
     } catch (e) {
       if (mounted) {
@@ -191,40 +183,64 @@ class _BarcodeLookupScreenState extends ConsumerState<BarcodeLookupScreen> {
   }
 
   Widget _buildBody() {
-    switch (_state) {
-      case _LookupState.idle:
-        return _HintCard(scanAvailable: _scanAvailable, onScan: _scan);
-
-      case _LookupState.loading:
-        return const Center(
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: CircularProgressIndicator(),
-          ),
-        );
-
-      case _LookupState.foundLocal:
-        return _FoundItemCard(
-          item: _localItem!,
-          label: 'Item in this branch',
-          onDone: () => Navigator.of(context).pop(),
-        );
-
-      case _LookupState.foundGlobal:
-        return _FoundInOtherBranchCard(
-          item: _globalItem!,
-          targetBranch: widget.branchName,
-          copying: _copying,
-          onCopy: _copyToBranch,
-          onCreateNew: _createNew,
-        );
-
-      case _LookupState.notFound:
-        return _NotFoundCard(
-          barcode: _barcodeController.text.trim(),
-          onCreate: _createNew,
-        );
+    if (_state == _LookupState.idle) {
+      return _HintCard(scanAvailable: _scanAvailable, onScan: _scan);
     }
+
+    if (_state == _LookupState.loading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    // _LookupState.results
+    final hasLocal = _localItem != null;
+    final hasOthers = _otherBranchItems.isNotEmpty;
+    final foundAnywhere = hasLocal || hasOthers;
+
+    if (!foundAnywhere) {
+      return _NotFoundCard(
+        barcode: _barcodeController.text.trim(),
+        onCreate: _createNew,
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Local item (in this branch)
+        if (hasLocal) ...[
+          _FoundItemCard(
+            item: _localItem!,
+            label: 'Already in ${widget.branchName}',
+            onDone: () => Navigator.of(context).pop(),
+          ),
+          if (hasOthers) const SizedBox(height: 12),
+        ],
+
+        // Items in other branches
+        for (final other in _otherBranchItems) ...[
+          _FoundInOtherBranchCard(
+            item: other,
+            targetBranch: widget.branchName,
+            copying: _copying,
+            onCopy: () => _copyToBranch(other),
+            onCreateNew: _createNew,
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // If only found in other branches, also offer "create new"
+        if (!hasLocal && hasOthers)
+          TextButton(
+            onPressed: _createNew,
+            child: const Text('Create as entirely new item instead'),
+          ),
+      ],
+    );
   }
 }
 
@@ -347,14 +363,9 @@ class _FoundInOtherBranchCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Found in another branch',
+              'Found in "${item.branchName}"',
               style: Theme.of(context).textTheme.labelLarge
                   ?.copyWith(color: cs.tertiary),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '"${item.branchName}" — copy to $targetBranch?',
-              style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 12),
             _ItemInfo(item: item),
@@ -372,11 +383,6 @@ class _FoundInOtherBranchCard extends StatelessWidget {
                     )
                   : const Icon(Icons.copy),
               label: Text(copying ? 'Copying...' : 'Copy to $targetBranch'),
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: onCreateNew,
-              child: const Text('Create as new item instead'),
             ),
           ],
         ),
