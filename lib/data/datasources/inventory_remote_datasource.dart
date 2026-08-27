@@ -122,4 +122,45 @@ class InventoryRemoteDatasource {
         .maybeSingle();
     return data;
   }
+
+  // ---- Stock movements ----
+
+  Future<int> recordMovement({
+    required int itemId,
+    required String movementType,
+    required int quantity,
+    String? note,
+  }) async {
+    final result = await _client.rpc('record_stock_movement', params: {
+      'p_item_id': itemId,
+      'p_movement_type': movementType,
+      'p_quantity': quantity,
+      if (note != null && note.trim().isNotEmpty) 'p_note': note.trim(),
+    });
+    return (result as num).toInt();
+  }
+
+  Future<List<Map<String, dynamic>>> fetchMovements({
+    required int branchId,
+    String? type,
+  }) async {
+    var query = _client
+        .from('stock_movements')
+        .select('*, items(name)')
+        .eq('branch_id', branchId);
+    if (type != null) {
+      query = query.eq('movement_type', type);
+    }
+    final data = await query
+        .order('created_at', ascending: false)
+        .limit(500);
+    return (data as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<Map<String, dynamic>> fetchStockReport(int branchId) async {
+    final result = await _client.rpc('branch_stock_report', params: {
+      'p_branch_id': branchId,
+    });
+    return Map<String, dynamic>.from(result as Map);
+  }
 }

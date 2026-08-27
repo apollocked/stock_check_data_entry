@@ -2,6 +2,8 @@ import 'package:cross_file/cross_file.dart';
 
 import '../entities/branch.dart';
 import '../entities/item.dart';
+import '../entities/stock_movement.dart';
+import '../entities/stock_report.dart';
 
 abstract interface class InventoryRepository {
   Future<List<Branch>> fetchBranches();
@@ -50,4 +52,17 @@ abstract interface class InventoryRepository {
   });
 
   Future<void> deleteItem(Item item);
+
+  // ---- Stock management ----
+  Future<int> recordMovement({
+    required Item item,
+    required MovementType type,
+    required int quantity,
+    String? note,
+  });
+  Future<List<StockMovement>> fetchMovements({
+    required int branchId,
+    MovementType? type,
+  });
+  Future<StockReport> fetchStockReport(int branchId);
 }

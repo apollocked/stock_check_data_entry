@@ -10,6 +10,7 @@ class Item {
   final String? barcode;
   final String? imageUrl;
   final Map<String, dynamic> customFields;
+  final int quantity;
   final DateTime createdAt;
 
   const Item({
@@ -22,6 +23,7 @@ class Item {
     this.barcode,
     this.imageUrl,
     this.customFields = const {},
+    this.quantity = 0,
     required this.createdAt,
   });
 
@@ -49,6 +51,7 @@ class Item {
       barcode: map['barcode'] as String?,
       imageUrl: map['image_url'] as String?,
       customFields: parsedCustom,
+      quantity: map['quantity'] as int? ?? 0,
       createdAt: DateTime.parse(map['created_at'] as String),
     );
   }
