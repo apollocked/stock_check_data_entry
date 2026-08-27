@@ -116,10 +116,20 @@ class InventoryRemoteDatasource {
     return (result as num).toInt();
   }
 
-  Future<List<Map<String, dynamic>>> fetchMovements({String? type}) async {
+  Future<List<Map<String, dynamic>>> fetchMovements({
+    String? type,
+    DateTime? day,
+  }) async {
     var query = _client.from('stock_movements').select('*, items(name)');
     if (type != null) {
       query = query.eq('movement_type', type);
+    }
+    if (day != null) {
+      final dayStart = DateTime(day.year, day.month, day.day).toUtc();
+      final dayEnd = dayStart.add(const Duration(days: 1));
+      query = query
+          .gte('created_at', dayStart.toIso8601String())
+          .lt('created_at', dayEnd.toIso8601String());
     }
     final data = await query.order('created_at', ascending: false).limit(500);
     return (data as List).cast<Map<String, dynamic>>();

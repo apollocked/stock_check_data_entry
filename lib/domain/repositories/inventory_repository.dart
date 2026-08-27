@@ -47,6 +47,9 @@ abstract interface class InventoryRepository {
     required int quantity,
     String? note,
   });
-  Future<List<StockMovement>> fetchMovements({MovementType? type});
+  Future<List<StockMovement>> fetchMovements({
+    MovementType? type,
+    DateTime? day,
+  });
   Future<StockReport> fetchStockReport(int storeId);
 }

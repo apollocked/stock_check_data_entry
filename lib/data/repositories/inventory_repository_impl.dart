@@ -149,9 +149,12 @@ class InventoryRepositoryImpl implements InventoryRepository {
   }
 
   @override
-  Future<List<StockMovement>> fetchMovements({MovementType? type}) async {
+  Future<List<StockMovement>> fetchMovements({
+    MovementType? type,
+    DateTime? day,
+  }) async {
     try {
-      final rows = await _remote.fetchMovements(type: type?.code);
+      final rows = await _remote.fetchMovements(type: type?.code, day: day);
       return [for (final row in rows) StockMovement.fromMap(row)];
     } catch (e) {
       throw AppException(

@@ -61,6 +61,17 @@ final movementsProvider = FutureProvider.autoDispose
           ref.watch(inventoryRepositoryProvider).fetchMovements(type: type),
     );
 
+final dayMovementsProvider = FutureProvider.autoDispose
+    .family<List<StockMovement>, (DateTime, MovementType?)>((ref, key) {
+      final (day, type) = key;
+      return ref
+          .watch(inventoryRepositoryProvider)
+          .fetchMovements(
+            type: type,
+            day: DateTime(day.year, day.month, day.day),
+          );
+    });
+
 final reportProvider = FutureProvider.autoDispose<StockReport>((ref) {
   final store = ref.watch(storeProvider).value;
   if (store == null) {
