@@ -36,9 +36,9 @@ class StockMovement {
   }
 
   int get signedQuantity => switch (type) {
-        MovementType.inbound => quantity,
-        MovementType.outbound || MovementType.damage => -quantity,
-      };
+    MovementType.inbound => quantity,
+    MovementType.outbound || MovementType.damage => -quantity,
+  };
 }
 
 enum MovementType {
@@ -47,21 +47,21 @@ enum MovementType {
   damage;
 
   static MovementType fromString(String value) => switch (value.toUpperCase()) {
-        'IN' => MovementType.inbound,
-        'OUT' => MovementType.outbound,
-        'DAMAGE' => MovementType.damage,
-        _ => throw ArgumentError('Unknown movement type: $value'),
-      };
+    'IN' => MovementType.inbound,
+    'OUT' => MovementType.outbound,
+    'DAMAGE' => MovementType.damage,
+    _ => throw ArgumentError('Unknown movement type: $value'),
+  };
 
   String get code => switch (this) {
-        MovementType.inbound => 'IN',
-        MovementType.outbound => 'OUT',
-        MovementType.damage => 'DAMAGE',
-      };
+    MovementType.inbound => 'IN',
+    MovementType.outbound => 'OUT',
+    MovementType.damage => 'DAMAGE',
+  };
 
   String get label => switch (this) {
-        MovementType.inbound => 'Stock in',
-        MovementType.outbound => 'Stock out',
-        MovementType.damage => 'Damage',
-      };
+    MovementType.inbound => 'Stock in',
+    MovementType.outbound => 'Stock out',
+    MovementType.damage => 'Damage',
+  };
 }

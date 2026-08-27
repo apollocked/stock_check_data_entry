@@ -6,23 +6,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/error/app_exception.dart';
-import '../../domain/entities/branch.dart';
 import '../../domain/entities/item.dart';
+import '../../domain/entities/store.dart';
+import '../controllers/inventory_controllers.dart';
 import '../providers/repository_providers.dart';
 
 class ItemFormScreen extends ConsumerStatefulWidget {
-  final int branchId;
   final String barcode;
   final Item? existingItem;
-  final List<BranchField> branchFields;
 
-  const ItemFormScreen({
-    super.key,
-    required this.branchId,
-    required this.barcode,
-    this.existingItem,
-    this.branchFields = const [],
-  });
+  const ItemFormScreen({super.key, this.barcode = '', this.existingItem});
 
   @override
   ConsumerState<ItemFormScreen> createState() => _ItemFormScreenState();
@@ -42,12 +35,13 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
 
   bool get _isEditMode => widget.existingItem != null;
 
-  List<BranchField> get _enabledFields =>
-      widget.branchFields.where((f) => f.enabled).toList();
-
-  bool _hasField(String id) => _enabledFields.any((f) => f.id == id);
-
   ImagePicker get _picker => ImagePicker();
+
+  List<ItemField> get _enabledFields =>
+      ref.read(storeProvider).value?.enabledFields ?? const [];
+
+  bool _hasField(String id) =>
+      _enabledFields.any((f) => f.id == id && f.enabled);
 
   @override
   void initState() {
@@ -61,20 +55,6 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
       text: item?.description ?? '',
     );
     _existingImageUrl = item?.imageUrl;
-
-    for (final f in _enabledFields) {
-      if (!const {
-        'name',
-        'price',
-        'description',
-        'barcode',
-        'image_url',
-      }.contains(f.id)) {
-        _customControllers[f.id] = TextEditingController(
-          text: item?.customValue(f.id)?.toString() ?? '',
-        );
-      }
-    }
   }
 
   @override
@@ -102,22 +82,24 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
     }
   }
 
+  TextEditingController _controllerFor(String fieldId) =>
+      _customControllers.putIfAbsent(
+        fieldId,
+        () => TextEditingController(
+          text: widget.existingItem?.customValue(fieldId)?.toString() ?? '',
+        ),
+      );
+
   Map<String, dynamic> _collectCustomFields() {
     final result = <String, dynamic>{};
-    for (final f in _enabledFields) {
-      if (const {
-        'name',
-        'price',
-        'description',
-        'barcode',
-        'image_url',
-      }.contains(f.id)) {
-        continue;
-      }
-      final ctrl = _customControllers[f.id];
+    for (final field in _enabledFields) {
+      if (kStandardFieldIds.contains(field.id)) continue;
+      final ctrl = _customControllers[field.id];
       if (ctrl != null && ctrl.text.trim().isNotEmpty) {
         final val = ctrl.text.trim();
-        result[f.id] = f.type == 'number' ? (num.tryParse(val) ?? val) : val;
+        result[field.id] = field.type == 'number'
+            ? (num.tryParse(val) ?? val)
+            : val;
       }
     }
     return result;
@@ -126,8 +108,9 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (!_isEditMode && _hasField('image_url') && _pickedImage == null) {
-      _showSnackBar('Please add a photo of the item', isError: true);
+    final store = ref.read(storeProvider).value;
+    if (!_isEditMode && store == null) {
+      _showSnackBar('Store is not loaded yet', isError: true);
       return;
     }
 
@@ -145,30 +128,27 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
       }
 
       final custom = _collectCustomFields();
+      final description =
+          _hasField('description') &&
+              _descriptionController.text.trim().isNotEmpty
+          ? _descriptionController.text.trim()
+          : null;
 
       if (_isEditMode) {
         await repo.updateItem(
           itemId: widget.existingItem!.id,
           name: _nameController.text.trim(),
           price: double.parse(_priceController.text.trim()),
-          description:
-              _hasField('description') &&
-                  _descriptionController.text.trim().isNotEmpty
-              ? _descriptionController.text.trim()
-              : null,
+          description: description,
           imageUrl: imageUrl,
           customFields: custom,
         );
       } else {
         await repo.insertItem(
-          branchId: widget.branchId,
+          storeId: store!.id,
           name: _nameController.text.trim(),
           price: double.parse(_priceController.text.trim()),
-          description:
-              _hasField('description') &&
-                  _descriptionController.text.trim().isNotEmpty
-              ? _descriptionController.text.trim()
-              : null,
+          description: description,
           barcode: widget.barcode.isEmpty ? null : widget.barcode,
           imageUrl: imageUrl,
           customFields: custom,
@@ -204,7 +184,7 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_isEditMode ? 'Edit item' : 'New item')),
+      appBar: AppBar(title: Text(_isEditMode ? 'Edit item' : 'Add item')),
       body: AbsorbPointer(
         absorbing: _submitting,
         child: Form(
@@ -264,26 +244,22 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
                     alignLabelWithHint: true,
                   ),
                 ),
-              // Custom fields
-              for (final f in _enabledFields)
-                if (!const {
-                  'name',
-                  'price',
-                  'description',
-                  'barcode',
-                  'image_url',
-                }.contains(f.id)) ...[
+              // Custom (store-defined) fields
+              for (final field in _enabledFields)
+                if (!kStandardFieldIds.contains(field.id)) ...[
                   const SizedBox(height: 16),
                   TextFormField(
-                    controller: _customControllers[f.id],
-                    keyboardType: f.type == 'number'
+                    controller: _controllerFor(field.id),
+                    keyboardType: field.type == 'number'
                         ? const TextInputType.numberWithOptions(decimal: true)
                         : TextInputType.text,
                     textInputAction: TextInputAction.next,
                     decoration: InputDecoration(
-                      labelText: f.label,
+                      labelText: field.label,
                       prefixIcon: Icon(
-                        f.type == 'number' ? Icons.numbers : Icons.edit_note,
+                        field.type == 'number'
+                            ? Icons.numbers
+                            : Icons.edit_note,
                       ),
                     ),
                   ),

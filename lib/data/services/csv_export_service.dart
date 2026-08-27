@@ -4,37 +4,27 @@ import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../../domain/entities/branch.dart';
 import '../../domain/entities/item.dart';
+import '../../domain/entities/store.dart';
 
 class CsvExportService {
   static const _standardHeaders = [
-    'branch_name',
     'item_id',
     'name',
     'description',
     'price',
     'barcode',
     'image_url',
+    'quantity',
     'created_at',
   ];
 
   Future<File> buildCsvFile(
     List<Item> items,
-    List<BranchField> branchFields,
+    List<ItemField> storeFields,
   ) async {
-    final enabledCustom = branchFields
-        .where(
-          (f) =>
-              f.enabled &&
-              !const {
-                'name',
-                'price',
-                'description',
-                'barcode',
-                'image_url',
-              }.contains(f.id),
-        )
+    final enabledCustom = storeFields
+        .where((f) => f.enabled && !kStandardFieldIds.contains(f.id))
         .toList();
 
     final headers = [..._standardHeaders, for (final f in enabledCustom) f.id];
@@ -43,13 +33,13 @@ class CsvExportService {
       headers,
       for (final item in items)
         [
-          item.branchName ?? '',
           item.id,
           item.name,
           item.description ?? '',
           item.price?.toStringAsFixed(2) ?? '',
           item.barcode ?? '',
           item.imageUrl ?? '',
+          item.quantity,
           item.createdAt.toIso8601String(),
           for (final f in enabledCustom)
             item.customValue(f.id)?.toString() ?? '',
@@ -58,13 +48,13 @@ class CsvExportService {
     final csvContent = const ListToCsvConverter().convert(rows);
     final directory = await getApplicationDocumentsDirectory();
     return File(
-      '${directory.path}${Platform.pathSeparator}grocery_items_${_timestamp(DateTime.now())}.csv',
+      '${directory.path}${Platform.pathSeparator}inventory_${_timestamp(DateTime.now())}.csv',
     ).writeAsString(csvContent);
   }
 
   Future<void> share(File file) async {
     await SharePlus.instance.share(
-      ShareParams(files: [XFile(file.path)], text: 'Grocery items export'),
+      ShareParams(files: [XFile(file.path)], text: 'Inventory export'),
     );
   }
 

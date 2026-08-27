@@ -5,7 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/config.dart';
 import 'core/theme/app_theme.dart';
 import 'presentation/controllers/auth_controllers.dart';
-import 'presentation/screens/branch_list_screen.dart';
+import 'presentation/screens/home_screen.dart';
 import 'presentation/screens/login_screen.dart';
 
 Future<void> main() async {
@@ -14,16 +14,16 @@ Future<void> main() async {
     url: Config.supabaseUrl,
     publishableKey: Config.supabaseAnonKey,
   );
-  runApp(const ProviderScope(child: StockCheckEntryApp()));
+  runApp(const ProviderScope(child: InventoryApp()));
 }
 
-class StockCheckEntryApp extends ConsumerWidget {
-  const StockCheckEntryApp({super.key});
+class InventoryApp extends ConsumerWidget {
+  const InventoryApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
-      title: 'Stock Check Entry',
+      title: 'Inventory Manager',
       debugShowCheckedModeBanner: false,
       theme: appTheme,
       home: ref
@@ -31,7 +31,7 @@ class StockCheckEntryApp extends ConsumerWidget {
           .when(
             loading: () => const _Splash(),
             data: (signedIn) =>
-                signedIn ? const BranchListScreen() : const LoginScreen(),
+                signedIn ? const HomeScreen() : const LoginScreen(),
             error: (_, _) => const LoginScreen(),
           ),
     );

@@ -1,27 +1,23 @@
 import 'package:cross_file/cross_file.dart';
 
-import '../entities/branch.dart';
 import '../entities/item.dart';
 import '../entities/stock_movement.dart';
 import '../entities/stock_report.dart';
+import '../entities/store.dart';
 
 abstract interface class InventoryRepository {
-  Future<List<Branch>> fetchBranches();
-  Future<Branch> createBranch({
-    required String name,
-    String? location,
-    required List<BranchField> fields,
-  });
-  Future<Branch> updateBranch({
-    required int branchId,
+  // ---- Store ----
+  Future<Store> fetchStore();
+  Future<Store> updateStore({
+    required int storeId,
     required Map<String, dynamic> updates,
   });
-  Future<void> deleteBranch(int branchId);
 
+  // ---- Items ----
   Future<String> uploadItemImage(XFile imageFile, {String? barcode});
 
   Future<Item> insertItem({
-    required int branchId,
+    required int storeId,
     required String name,
     required double price,
     String? description,
@@ -30,17 +26,8 @@ abstract interface class InventoryRepository {
     Map<String, dynamic>? customFields,
   });
 
-  Future<List<Item>> fetchItems({int? branchId});
-  Future<Item?> searchByBarcode({
-    required int branchId,
-    required String barcode,
-  });
-  Future<Item?> searchByBarcodeGlobal(String barcode);
-
-  Future<void> copyItemToBranch({
-    required Item sourceItem,
-    required int targetBranchId,
-  });
+  Future<List<Item>> fetchItems();
+  Future<Item?> searchByBarcode(String barcode);
 
   Future<Item> updateItem({
     required int itemId,
@@ -60,9 +47,6 @@ abstract interface class InventoryRepository {
     required int quantity,
     String? note,
   });
-  Future<List<StockMovement>> fetchMovements({
-    required int branchId,
-    MovementType? type,
-  });
-  Future<StockReport> fetchStockReport(int branchId);
+  Future<List<StockMovement>> fetchMovements({MovementType? type});
+  Future<StockReport> fetchStockReport(int storeId);
 }

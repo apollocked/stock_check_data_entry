@@ -5,22 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-import '../../domain/entities/branch.dart';
 import '../../domain/entities/item.dart';
 import '../providers/repository_providers.dart';
 import 'new_item_form_screen.dart';
+import 'stock_action_sheet.dart';
 
 class BarcodeLookupScreen extends ConsumerStatefulWidget {
-  final int branchId;
-  final String branchName;
-  final List<BranchField> branchFields;
-
-  const BarcodeLookupScreen({
-    super.key,
-    required this.branchId,
-    required this.branchName,
-    this.branchFields = const [],
-  });
+  const BarcodeLookupScreen({super.key});
 
   @override
   ConsumerState<BarcodeLookupScreen> createState() =>
@@ -33,9 +24,7 @@ class _BarcodeLookupScreenState extends ConsumerState<BarcodeLookupScreen> {
   final _barcodeController = TextEditingController();
   bool _scanAvailable = true;
   _LookupState _state = _LookupState.idle;
-  Item? _localItem;
-  List<Item> _otherBranchItems = [];
-  bool _copying = false;
+  Item? _item;
 
   @override
   void initState() {
@@ -57,35 +46,16 @@ class _BarcodeLookupScreenState extends ConsumerState<BarcodeLookupScreen> {
     if (barcode.trim().isEmpty) return;
     setState(() {
       _state = _LookupState.loading;
-      _localItem = null;
-      _otherBranchItems = [];
+      _item = null;
     });
 
     final repo = ref.read(inventoryRepositoryProvider);
 
     try {
-      // Search current branch AND all other branches in parallel
-      final localFuture = repo.searchByBarcode(
-        branchId: widget.branchId,
-        barcode: barcode.trim(),
-      );
-      final globalFuture = repo.searchByBarcodeGlobal(barcode.trim());
-
-      final results = await Future.wait<Item?>([localFuture, globalFuture]);
+      final found = await repo.searchByBarcode(barcode.trim());
       if (!mounted) return;
-
-      final local = results[0];
-      final global = results[1];
-
-      // Build list of other-branch items (exclude the local one)
-      final others = <Item>[];
-      if (global != null && global.branchId != widget.branchId) {
-        others.add(global);
-      }
-
       setState(() {
-        _localItem = local;
-        _otherBranchItems = others;
+        _item = found;
         _state = _LookupState.results;
       });
     } catch (e) {
@@ -94,33 +64,6 @@ class _BarcodeLookupScreenState extends ConsumerState<BarcodeLookupScreen> {
             .showSnackBar(SnackBar(content: Text('Lookup failed: $e')));
         setState(() => _state = _LookupState.idle);
       }
-    }
-  }
-
-  Future<void> _copyToBranch(Item sourceItem) async {
-    setState(() => _copying = true);
-    try {
-      await ref
-          .read(inventoryRepositoryProvider)
-          .copyItemToBranch(
-            sourceItem: sourceItem,
-            targetBranchId: widget.branchId,
-          );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('"${sourceItem.name}" copied to ${widget.branchName}'),
-        ),
-      );
-      // Re-lookup to refresh the local item
-      _lookup(_barcodeController.text.trim());
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Copy failed: $e')));
-      }
-    } finally {
-      if (mounted) setState(() => _copying = false);
     }
   }
 
@@ -137,11 +80,7 @@ class _BarcodeLookupScreenState extends ConsumerState<BarcodeLookupScreen> {
   Future<void> _createNew() async {
     final created = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) => ItemFormScreen(
-          branchId: widget.branchId,
-          barcode: _barcodeController.text.trim(),
-          branchFields: widget.branchFields,
-        ),
+        builder: (_) => ItemFormScreen(barcode: _barcodeController.text.trim()),
       ),
     );
     if (created == true) _lookup(_barcodeController.text.trim());
@@ -187,64 +126,34 @@ class _BarcodeLookupScreenState extends ConsumerState<BarcodeLookupScreen> {
   }
 
   Widget _buildBody() {
-    if (_state == _LookupState.idle) {
-      return _HintCard(scanAvailable: _scanAvailable, onScan: _scan);
-    }
+    switch (_state) {
+      case _LookupState.idle:
+        return _HintCard(scanAvailable: _scanAvailable, onScan: _scan);
 
-    if (_state == _LookupState.loading) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
-    // _LookupState.results
-    final hasLocal = _localItem != null;
-    final hasOthers = _otherBranchItems.isNotEmpty;
-    final foundAnywhere = hasLocal || hasOthers;
-
-    if (!foundAnywhere) {
-      return _NotFoundCard(
-        barcode: _barcodeController.text.trim(),
-        onCreate: _createNew,
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Local item (in this branch)
-        if (hasLocal) ...[
-          _FoundItemCard(
-            item: _localItem!,
-            label: 'Already in ${widget.branchName}',
-            onDone: () => Navigator.of(context).pop(),
+      case _LookupState.loading:
+        return const Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: CircularProgressIndicator(),
           ),
-          if (hasOthers) const SizedBox(height: 12),
-        ],
+        );
 
-        // Items in other branches
-        for (final other in _otherBranchItems) ...[
-          _FoundInOtherBranchCard(
-            item: other,
-            targetBranch: widget.branchName,
-            copying: _copying,
-            onCopy: () => _copyToBranch(other),
-            onCreateNew: _createNew,
-          ),
-          const SizedBox(height: 12),
-        ],
-
-        // If only found in other branches, also offer "create new"
-        if (!hasLocal && hasOthers)
-          TextButton(
-            onPressed: _createNew,
-            child: const Text('Create as entirely new item instead'),
-          ),
-      ],
-    );
+      case _LookupState.results:
+        final item = _item;
+        if (item == null) {
+          return _NotFoundCard(
+            barcode: _barcodeController.text.trim(),
+            onCreate: _createNew,
+          );
+        }
+        return _FoundItemCard(
+          item: item,
+          onDone: () => Navigator.of(context).pop(),
+          onStockAction: () {
+            showStockActionSheet(context, item: item);
+          },
+        );
+    }
   }
 }
 
@@ -290,20 +199,27 @@ class _HintCard extends StatelessWidget {
   }
 }
 
-class _FoundItemCard extends StatelessWidget {
+class _FoundItemCard extends StatefulWidget {
   final Item item;
-  final String label;
   final VoidCallback onDone;
+  final VoidCallback onStockAction;
 
   const _FoundItemCard({
     required this.item,
-    required this.label,
     required this.onDone,
+    required this.onStockAction,
   });
 
   @override
+  State<_FoundItemCard> createState() => _FoundItemCardState();
+}
+
+class _FoundItemCardState extends State<_FoundItemCard> {
+  @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final item = widget.item;
+    final low = item.quantity <= 5;
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -316,77 +232,82 @@ class _FoundItemCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              label,
+              'Item already in inventory',
               style: Theme.of(context).textTheme.labelLarge
                   ?.copyWith(color: cs.primary),
             ),
             const SizedBox(height: 12),
-            _ItemInfo(item: item),
-            const SizedBox(height: 16),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(48),
-              ),
-              onPressed: onDone,
-              child: const Text('Done'),
+            Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: item.imageUrl != null
+                      ? Image.network(
+                          item.imageUrl!,
+                          width: 72,
+                          height: 72,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => Container(
+                            width: 72,
+                            height: 72,
+                            color: cs.surfaceContainerHighest,
+                            child: Icon(Icons.broken_image, color: cs.outline),
+                          ),
+                        )
+                      : Container(
+                          width: 72,
+                          height: 72,
+                          color: cs.surfaceContainerHighest,
+                          child: Icon(
+                            Icons.image_not_supported,
+                            color: cs.outline,
+                          ),
+                        ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.name,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Barcode: ${item.barcode ?? 'N/A'}',
+                        style: Theme.of(context).textTheme.bodySmall
+                            ?.copyWith(color: cs.outline),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'In stock: ${item.quantity}',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: low ? cs.error : cs.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FoundInOtherBranchCard extends StatelessWidget {
-  final Item item;
-  final String targetBranch;
-  final bool copying;
-  final VoidCallback onCopy;
-  final VoidCallback onCreateNew;
-
-  const _FoundInOtherBranchCard({
-    required this.item,
-    required this.targetBranch,
-    required this.copying,
-    required this.onCopy,
-    required this.onCreateNew,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      elevation: 0,
-      color: cs.tertiaryContainer,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Found in "${item.branchName}"',
-              style: Theme.of(context).textTheme.labelLarge
-                  ?.copyWith(color: cs.tertiary),
-            ),
-            const SizedBox(height: 12),
-            _ItemInfo(item: item),
             const SizedBox(height: 16),
             FilledButton.icon(
               style: FilledButton.styleFrom(
                 minimumSize: const Size.fromHeight(48),
               ),
-              onPressed: copying ? null : onCopy,
-              icon: copying
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.copy),
-              label: Text(copying ? 'Copying...' : 'Copy to $targetBranch'),
+              onPressed: widget.onStockAction,
+              icon: const Icon(Icons.swap_vert),
+              label: const Text('Manage stock'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+              ),
+              onPressed: widget.onDone,
+              child: const Text('Done'),
             ),
           ],
         ),
@@ -417,85 +338,18 @@ class _NotFoundCard extends StatelessWidget {
             Icon(Icons.search_off, size: 48, color: cs.onErrorContainer),
             const SizedBox(height: 12),
             Text(
-              'No item with barcode\n"$barcode"\nfound in any branch.',
+              'No item with barcode\n"$barcode"\nfound in inventory.',
               textAlign: TextAlign.center,
               style: TextStyle(color: cs.onErrorContainer),
             ),
             const SizedBox(height: 16),
             FilledButton(
               onPressed: onCreate,
-              child: const Text('Create new item'),
+              child: const Text('Add new item'),
             ),
           ],
         ),
       ),
-    );
-  }
-}
-
-class _ItemInfo extends StatelessWidget {
-  final Item item;
-
-  const _ItemInfo({required this.item});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Row(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: item.imageUrl != null
-              ? Image.network(
-                  item.imageUrl!,
-                  width: 72,
-                  height: 72,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => Container(
-                    width: 72,
-                    height: 72,
-                    color: cs.surfaceContainerHighest,
-                    child: Icon(Icons.broken_image, color: cs.outline),
-                  ),
-                )
-              : Container(
-                  width: 72,
-                  height: 72,
-                  color: cs.surfaceContainerHighest,
-                  child: Icon(Icons.image_not_supported, color: cs.outline),
-                ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(item.name, style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 4),
-              if (item.description != null && item.description!.isNotEmpty)
-                Text(
-                  item.description!,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              const SizedBox(height: 4),
-              Text(
-                'Barcode: ${item.barcode ?? 'N/A'}',
-                style: Theme.of(context).textTheme.bodySmall
-                    ?.copyWith(color: cs.outline),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          item.price == null ? '-' : item.price!.toStringAsFixed(2),
-          style: Theme.of(context).textTheme.headlineSmall
-              ?.copyWith(fontWeight: FontWeight.bold, color: cs.primary),
-        ),
-      ],
     );
   }
 }

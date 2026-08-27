@@ -1,8 +1,10 @@
 import 'package:cross_file/cross_file.dart';
 
 import '../../core/error/app_exception.dart';
-import '../../domain/entities/branch.dart';
 import '../../domain/entities/item.dart';
+import '../../domain/entities/stock_movement.dart';
+import '../../domain/entities/stock_report.dart';
+import '../../domain/entities/store.dart';
 import '../../domain/repositories/inventory_repository.dart';
 import '../datasources/image_storage_datasource.dart';
 import '../datasources/inventory_remote_datasource.dart';
@@ -14,58 +16,25 @@ class InventoryRepositoryImpl implements InventoryRepository {
   const InventoryRepositoryImpl(this._remote, this._storage);
 
   @override
-  Future<List<Branch>> fetchBranches() async {
+  Future<Store> fetchStore() async {
     try {
-      final rows = await _remote.fetchBranches();
-      return [for (final row in rows) Branch.fromMap(row)];
+      final row = await _remote.fetchStore();
+      return Store.fromMap(row);
     } catch (e) {
-      throw AppException(
-        'Could not load branches: $e',
-        AppExceptionType.network,
-      );
+      throw AppException('Could not load store: $e', AppExceptionType.network);
     }
   }
 
   @override
-  Future<Branch> createBranch({
-    required String name,
-    String? location,
-    required List<BranchField> fields,
-  }) async {
-    try {
-      final row = await _remote.createBranch(
-        name: name,
-        location: location,
-        fields: [for (final f in fields) f.toMap()],
-      );
-      return Branch.fromMap(row);
-    } catch (e) {
-      throw AppException('Could not create branch: $e');
-    }
-  }
-
-  @override
-  Future<Branch> updateBranch({
-    required int branchId,
+  Future<Store> updateStore({
+    required int storeId,
     required Map<String, dynamic> updates,
   }) async {
     try {
-      final row = await _remote.updateBranch(
-        branchId: branchId,
-        updates: updates,
-      );
-      return Branch.fromMap(row);
+      final row = await _remote.updateStore(storeId: storeId, updates: updates);
+      return Store.fromMap(row);
     } catch (e) {
-      throw AppException('Could not update branch: $e');
-    }
-  }
-
-  @override
-  Future<void> deleteBranch(int branchId) async {
-    try {
-      await _remote.deleteBranch(branchId);
-    } catch (e) {
-      throw AppException('Could not delete branch: $e');
+      throw AppException('Could not update store: $e');
     }
   }
 
@@ -80,7 +49,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
 
   @override
   Future<Item> insertItem({
-    required int branchId,
+    required int storeId,
     required String name,
     required double price,
     String? description,
@@ -90,7 +59,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
   }) async {
     try {
       final row = await _remote.insertItem(
-        branchId: branchId,
+        storeId: storeId,
         name: name,
         price: price,
         description: description,
@@ -105,9 +74,9 @@ class InventoryRepositoryImpl implements InventoryRepository {
   }
 
   @override
-  Future<List<Item>> fetchItems({int? branchId}) async {
+  Future<List<Item>> fetchItems() async {
     try {
-      final rows = await _remote.fetchItems(branchId: branchId);
+      final rows = await _remote.fetchItems();
       return [for (final row in rows) Item.fromMap(row)];
     } catch (e) {
       throw AppException('Could not load items: $e', AppExceptionType.network);
@@ -115,51 +84,12 @@ class InventoryRepositoryImpl implements InventoryRepository {
   }
 
   @override
-  Future<Item?> searchByBarcode({
-    required int branchId,
-    required String barcode,
-  }) async {
+  Future<Item?> searchByBarcode(String barcode) async {
     try {
-      final row = await _remote.searchByBarcode(
-        branchId: branchId,
-        barcode: barcode,
-      );
+      final row = await _remote.searchByBarcode(barcode);
       return row == null ? null : Item.fromMap(row);
     } catch (e) {
       throw AppException('Barcode lookup failed: $e', AppExceptionType.network);
-    }
-  }
-
-  @override
-  Future<Item?> searchByBarcodeGlobal(String barcode) async {
-    try {
-      final row = await _remote.searchByBarcodeGlobal(barcode);
-      return row == null ? null : Item.fromMap(row);
-    } catch (e) {
-      throw AppException(
-        'Global barcode lookup failed: $e',
-        AppExceptionType.network,
-      );
-    }
-  }
-
-  @override
-  Future<void> copyItemToBranch({
-    required Item sourceItem,
-    required int targetBranchId,
-  }) async {
-    try {
-      await _remote.insertItem(
-        branchId: targetBranchId,
-        name: sourceItem.name,
-        price: sourceItem.price ?? 0,
-        description: sourceItem.description,
-        barcode: sourceItem.barcode,
-        imageUrl: sourceItem.imageUrl,
-        customFields: sourceItem.customFields,
-      );
-    } catch (e) {
-      throw AppException('Could not copy item: $e');
     }
   }
 
@@ -196,6 +126,48 @@ class InventoryRepositoryImpl implements InventoryRepository {
       await _storage.remove(item.imageUrl);
     } catch (e) {
       throw AppException('Could not delete item: $e');
+    }
+  }
+
+  @override
+  Future<int> recordMovement({
+    required Item item,
+    required MovementType type,
+    required int quantity,
+    String? note,
+  }) async {
+    try {
+      return await _remote.recordMovement(
+        itemId: item.id,
+        movementType: type.code,
+        quantity: quantity,
+        note: note,
+      );
+    } catch (e) {
+      throw AppException('Could not record movement: $e');
+    }
+  }
+
+  @override
+  Future<List<StockMovement>> fetchMovements({MovementType? type}) async {
+    try {
+      final rows = await _remote.fetchMovements(type: type?.code);
+      return [for (final row in rows) StockMovement.fromMap(row)];
+    } catch (e) {
+      throw AppException(
+        'Could not load movements: $e',
+        AppExceptionType.network,
+      );
+    }
+  }
+
+  @override
+  Future<StockReport> fetchStockReport(int storeId) async {
+    try {
+      final row = await _remote.fetchStockReport(storeId);
+      return StockReport.fromMap(row);
+    } catch (e) {
+      throw AppException('Could not load report: $e', AppExceptionType.network);
     }
   }
 }

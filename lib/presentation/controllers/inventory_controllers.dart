@@ -2,45 +2,69 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../domain/entities/branch.dart';
 import '../../domain/entities/item.dart';
+import '../../domain/entities/stock_movement.dart';
+import '../../domain/entities/stock_report.dart';
+import '../../domain/entities/store.dart';
 import '../providers/repository_providers.dart';
 
-class BranchesController extends AsyncNotifier<List<Branch>> {
+class StoreController extends AsyncNotifier<Store> {
   @override
-  FutureOr<List<Branch>> build() {
-    return ref.watch(inventoryRepositoryProvider).fetchBranches();
+  Future<Store> build() {
+    return ref.watch(inventoryRepositoryProvider).fetchStore();
   }
 
-  Future<Branch> create({
-    required String name,
-    String? location,
-    required List<BranchField> fields,
-  }) async {
-    final repo = ref.read(inventoryRepositoryProvider);
-    final created = await repo.createBranch(
-      name: name.trim(),
-      location: location?.trim(),
-      fields: fields,
-    );
-    state = const AsyncLoading<List<Branch>>();
-    state = await AsyncValue.guard(repo.fetchBranches);
-    return created;
-  }
+  Future<Store> updateFields(List<ItemField> fields) async {
+    final store = state.value;
+    if (store == null) {
+      state = const AsyncLoading<Store>();
+      state = await AsyncValue.guard(
+        () => ref.read(inventoryRepositoryProvider).fetchStore(),
+      );
+    }
+    final current = state.value;
+    if (current == null) throw StateError('Store is not loaded');
 
-  Future<void> updateBranch(int branchId, Map<String, dynamic> updates) async {
-    final repo = ref.read(inventoryRepositoryProvider);
-    await repo.updateBranch(branchId: branchId, updates: updates);
-    state = await AsyncValue.guard(repo.fetchBranches);
+    final updated = await ref
+        .read(inventoryRepositoryProvider)
+        .updateStore(
+          storeId: current.id,
+          updates: {
+            'fields': [
+              for (final f in fields)
+                {
+                  'id': f.id,
+                  'label': f.label,
+                  'type': f.type,
+                  'enabled': f.enabled,
+                  'required': f.required,
+                },
+            ],
+          },
+        );
+    state = AsyncData(updated);
+    return updated;
   }
 }
 
-final branchesProvider =
-    AsyncNotifierProvider<BranchesController, List<Branch>>(
-      BranchesController.new,
+final storeProvider = AsyncNotifierProvider<StoreController, Store>(
+  StoreController.new,
+);
+
+final itemsProvider = FutureProvider.autoDispose<List<Item>>(
+  (ref) => ref.watch(inventoryRepositoryProvider).fetchItems(),
+);
+
+final movementsProvider = FutureProvider.autoDispose
+    .family<List<StockMovement>, MovementType?>(
+      (ref, type) =>
+          ref.watch(inventoryRepositoryProvider).fetchMovements(type: type),
     );
 
-final itemsProvider = FutureProvider.autoDispose.family<List<Item>, int?>(
-  (ref, branchId) =>
-      ref.watch(inventoryRepositoryProvider).fetchItems(branchId: branchId),
-);
+final reportProvider = FutureProvider.autoDispose<StockReport>((ref) {
+  final store = ref.watch(storeProvider).value;
+  if (store == null) {
+    throw StateError('Store is not loaded');
+  }
+  return ref.watch(inventoryRepositoryProvider).fetchStockReport(store.id);
+});

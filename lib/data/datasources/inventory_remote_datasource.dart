@@ -5,51 +5,37 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class InventoryRemoteDatasource {
   static SupabaseClient get _client => Supabase.instance.client;
 
-  static const _branchColumns = 'id, name, location, fields';
+  static const _storeColumns = 'id, name, location, fields';
   static const _itemColumns = '*, branches(name)';
 
-  Future<List<Map<String, dynamic>>> fetchBranches() async {
+  // ---- Store (single store) ----
+
+  Future<Map<String, dynamic>> fetchStore() async {
     final data = await _client
         .from('branches')
-        .select(_branchColumns)
-        .order('name', ascending: true);
-    return (data as List).cast<Map<String, dynamic>>();
-  }
-
-  Future<Map<String, dynamic>> createBranch({
-    required String name,
-    String? location,
-    required List<Map<String, dynamic>> fields,
-  }) {
-    return _client
-        .from('branches')
-        .insert({
-          'name': name,
-          'location': location,
-          'fields': jsonEncode(fields),
-        })
-        .select(_branchColumns)
+        .select(_storeColumns)
+        .order('id', ascending: true)
+        .limit(1)
         .single();
+    return Map<String, dynamic>.from(data as Map);
   }
 
-  Future<Map<String, dynamic>> updateBranch({
-    required int branchId,
+  Future<Map<String, dynamic>> updateStore({
+    required int storeId,
     required Map<String, dynamic> updates,
   }) {
     return _client
         .from('branches')
         .update(updates)
-        .eq('id', branchId)
-        .select(_branchColumns)
+        .eq('id', storeId)
+        .select(_storeColumns)
         .single();
   }
 
-  Future<void> deleteBranch(int branchId) async {
-    await _client.from('branches').delete().eq('id', branchId);
-  }
+  // ---- Items ----
 
   Future<Map<String, dynamic>> insertItem({
-    required int branchId,
+    required int storeId,
     required String name,
     required double price,
     String? description,
@@ -58,7 +44,7 @@ class InventoryRemoteDatasource {
     Map<String, dynamic>? customFields,
   }) {
     final row = {
-      'branch_id': branchId,
+      'branch_id': storeId,
       'name': name,
       'price': price,
       'description': description,
@@ -71,12 +57,12 @@ class InventoryRemoteDatasource {
     return _client.from('items').insert(row).select(_itemColumns).single();
   }
 
-  Future<List<Map<String, dynamic>>> fetchItems({int? branchId}) async {
-    var query = _client.from('items').select(_itemColumns);
-    if (branchId != null) {
-      query = query.eq('branch_id', branchId);
-    }
-    final data = await query.order('created_at', ascending: false).limit(1000);
+  Future<List<Map<String, dynamic>>> fetchItems() async {
+    final data = await _client
+        .from('items')
+        .select(_itemColumns)
+        .order('created_at', ascending: false)
+        .limit(1000);
     return (data as List).cast<Map<String, dynamic>>();
   }
 
@@ -100,20 +86,7 @@ class InventoryRemoteDatasource {
         .single();
   }
 
-  Future<Map<String, dynamic>?> searchByBarcode({
-    required int branchId,
-    required String barcode,
-  }) async {
-    final data = await _client
-        .from('items')
-        .select(_itemColumns)
-        .eq('branch_id', branchId)
-        .eq('barcode', barcode)
-        .maybeSingle();
-    return data;
-  }
-
-  Future<Map<String, dynamic>?> searchByBarcodeGlobal(String barcode) async {
+  Future<Map<String, dynamic>?> searchByBarcode(String barcode) async {
     final data = await _client
         .from('items')
         .select(_itemColumns)
@@ -131,36 +104,32 @@ class InventoryRemoteDatasource {
     required int quantity,
     String? note,
   }) async {
-    final result = await _client.rpc('record_stock_movement', params: {
-      'p_item_id': itemId,
-      'p_movement_type': movementType,
-      'p_quantity': quantity,
-      if (note != null && note.trim().isNotEmpty) 'p_note': note.trim(),
-    });
+    final result = await _client.rpc(
+      'record_stock_movement',
+      params: {
+        'p_item_id': itemId,
+        'p_movement_type': movementType,
+        'p_quantity': quantity,
+        if (note != null && note.trim().isNotEmpty) 'p_note': note.trim(),
+      },
+    );
     return (result as num).toInt();
   }
 
-  Future<List<Map<String, dynamic>>> fetchMovements({
-    required int branchId,
-    String? type,
-  }) async {
-    var query = _client
-        .from('stock_movements')
-        .select('*, items(name)')
-        .eq('branch_id', branchId);
+  Future<List<Map<String, dynamic>>> fetchMovements({String? type}) async {
+    var query = _client.from('stock_movements').select('*, items(name)');
     if (type != null) {
       query = query.eq('movement_type', type);
     }
-    final data = await query
-        .order('created_at', ascending: false)
-        .limit(500);
+    final data = await query.order('created_at', ascending: false).limit(500);
     return (data as List).cast<Map<String, dynamic>>();
   }
 
-  Future<Map<String, dynamic>> fetchStockReport(int branchId) async {
-    final result = await _client.rpc('branch_stock_report', params: {
-      'p_branch_id': branchId,
-    });
+  Future<Map<String, dynamic>> fetchStockReport(int storeId) async {
+    final result = await _client.rpc(
+      'branch_stock_report',
+      params: {'p_branch_id': storeId},
+    );
     return Map<String, dynamic>.from(result as Map);
   }
 }
