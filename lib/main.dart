@@ -7,6 +7,7 @@ import 'core/theme/app_theme.dart';
 import 'presentation/controllers/auth_controllers.dart';
 import 'presentation/screens/home_screen.dart';
 import 'presentation/screens/login_screen.dart';
+import 'presentation/widgets/brand_logo.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,16 +15,16 @@ Future<void> main() async {
     url: Config.supabaseUrl,
     publishableKey: Config.supabaseAnonKey,
   );
-  runApp(const ProviderScope(child: InventoryApp()));
+  runApp(const ProviderScope(child: StocklyApp()));
 }
 
-class InventoryApp extends ConsumerWidget {
-  const InventoryApp({super.key});
+class StocklyApp extends ConsumerWidget {
+  const StocklyApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
-      title: 'Inventory Manager',
+      title: 'Stockly',
       debugShowCheckedModeBanner: false,
       theme: appTheme,
       home: ref
@@ -43,18 +44,19 @@ class _Splash extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.storefront,
-              size: 56,
-              color: Theme.of(context).colorScheme.primary,
+            BrandLogo(size: 96),
+            SizedBox(height: 20),
+            Text(
+              'Stockly',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
             ),
-            const SizedBox(height: 16),
-            const CircularProgressIndicator(),
+            SizedBox(height: 24),
+            CircularProgressIndicator(),
           ],
         ),
       ),

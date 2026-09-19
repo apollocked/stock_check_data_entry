@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../../domain/entities/item.dart';
 import '../controllers/auth_controllers.dart';
 import '../controllers/inventory_controllers.dart';
@@ -135,8 +136,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       appBar: AppBar(
         title: storeAsync.maybeWhen(
           data: (store) => Text(store.name),
-          orElse: () => const Text('Inventory Manager'),
+          orElse: () => const Text('Stockly'),
         ),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: kBrandGradient,
+            ),
+          ),
+        ),
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           if (_tabIndex == 0)
             IconButton(
@@ -145,7 +157,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : const Icon(Icons.ios_share),
               onPressed: items == null || _exporting
@@ -159,7 +174,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : const Icon(Icons.grid_on),
               onPressed: _exporting ? null : _exportExcel,

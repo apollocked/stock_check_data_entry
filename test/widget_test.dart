@@ -7,10 +7,11 @@ void main() {
   testWidgets('App shows login screen when signed out', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const ProviderScope(child: InventoryApp()));
+    await tester.pumpWidget(const ProviderScope(child: StocklyApp()));
     await tester.pump();
     await tester.pumpAndSettle();
 
+    expect(find.text('Stockly'), findsOneWidget);
     expect(find.text('Sign in'), findsOneWidget);
     expect(find.text('Email'), findsOneWidget);
   });

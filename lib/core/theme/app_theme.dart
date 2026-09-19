@@ -12,10 +12,7 @@ ThemeData _buildTheme() {
     brightness: Brightness.light,
   );
 
-  final base = ThemeData(
-    useMaterial3: true,
-    colorScheme: scheme,
-  );
+  final base = ThemeData(useMaterial3: true, colorScheme: scheme);
 
   final textTheme = base.textTheme.apply(
     bodyColor: scheme.onSurface,
@@ -94,12 +91,11 @@ ThemeData _buildTheme() {
       indicatorColor: scheme.primaryContainer,
       labelTextStyle: WidgetStateProperty.resolveWith(
         (states) =>
-            TextStyle(fontSize: 12, fontWeight: FontWeight.w600)
-                .copyWith(
-                  color: states.contains(WidgetState.selected)
-                      ? scheme.primary
-                      : scheme.onSurfaceVariant,
-                ),
+            TextStyle(fontSize: 12, fontWeight: FontWeight.w600).copyWith(
+              color: states.contains(WidgetState.selected)
+                  ? scheme.primary
+                  : scheme.onSurfaceVariant,
+            ),
       ),
       iconTheme: WidgetStateProperty.resolveWith(
         (states) => IconThemeData(
@@ -118,7 +114,9 @@ ThemeData _buildTheme() {
     dialogTheme: DialogThemeData(
       backgroundColor: scheme.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      titleTextStyle: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+      titleTextStyle: textTheme.titleLarge?.copyWith(
+        fontWeight: FontWeight.w700,
+      ),
     ),
     bottomSheetTheme: BottomSheetThemeData(
       backgroundColor: scheme.surface,

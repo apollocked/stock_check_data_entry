@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../../domain/entities/item.dart';
 import '../controllers/inventory_controllers.dart';
 import '../providers/repository_providers.dart';
@@ -71,12 +72,16 @@ class _InventoryTabState extends ConsumerState<InventoryTab> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-          child: TextField(
-            decoration: const InputDecoration(
-              hintText: 'Search items...',
-              prefixIcon: Icon(Icons.search),
-              isDense: true,
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: SearchBar(
+            leading: const Icon(Icons.search),
+            hintText: 'Search items or barcode...',
+            elevation: const WidgetStatePropertyAll(0),
+            backgroundColor: WidgetStatePropertyAll(
+              Theme.of(context).colorScheme.surface,
+            ),
+            shape: WidgetStatePropertyAll(
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
             onChanged: (v) => setState(() => _searchQuery = v.trim()),
           ),
@@ -138,9 +143,9 @@ class _InventoryTabState extends ConsumerState<InventoryTab> {
                         ],
                       )
                     : ListView.separated(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.fromLTRB(12, 12, 12, 96),
                         itemCount: filtered.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 6),
+                        separatorBuilder: (_, _) => const SizedBox(height: 8),
                         itemBuilder: (context, index) {
                           final item = filtered[index];
                           return _ItemCard(
@@ -174,18 +179,32 @@ class _ItemCard extends StatelessWidget {
     required this.onDelete,
   });
 
-  bool get _isLow => item.quantity <= 5 && item.quantity > 0;
-  bool get _isOut => item.quantity <= 0;
+  (Color, String, Color) get _stockBadge {
+    final qty = item.quantity;
+    if (qty < 0) {
+      return (Colors.red, 'Minus: $qty', Colors.red);
+    }
+    if (qty == 0) {
+      return (Colors.grey.shade600, 'Zero stock', Colors.grey.shade600);
+    }
+    if (qty <= 5) {
+      return (Colors.orange.shade700, 'Low: $qty', Colors.orange.shade700);
+    }
+    return (Colors.green.shade700, '$qty in stock', Colors.green.shade700);
+  }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final (pillBg, pillText, pillFg) = _stockBadge;
 
     return Card(
       clipBehavior: Clip.antiAlias,
-      elevation: 0,
-      color: cs.surfaceContainerLow,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: cs.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: cs.outlineVariant.withAlpha(60)),
+      ),
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -193,29 +212,16 @@ class _ItemCard extends StatelessWidget {
           child: Row(
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(14),
                 child: item.imageUrl != null
                     ? Image.network(
                         item.imageUrl!,
-                        width: 56,
-                        height: 56,
+                        width: 60,
+                        height: 60,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Container(
-                          width: 56,
-                          height: 56,
-                          color: cs.surfaceContainerHighest,
-                          child: Icon(Icons.broken_image, color: cs.outline),
-                        ),
+                        errorBuilder: (_, _, _) => _ImagePlaceholder(),
                       )
-                    : Container(
-                        width: 56,
-                        height: 56,
-                        color: cs.surfaceContainerHighest,
-                        child: Icon(
-                          Icons.image_not_supported,
-                          color: cs.outline,
-                        ),
-                      ),
+                    : const _ImagePlaceholder(),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -224,61 +230,48 @@ class _ItemCard extends StatelessWidget {
                   children: [
                     Text(
                       item.name,
-                      style: Theme.of(context).textTheme.titleSmall,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w700),
                     ),
-                    if (item.description != null &&
-                        item.description!.isNotEmpty)
-                      Text(
-                        item.description!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
                     if (item.barcode != null)
                       Text(
                         item.barcode!,
-                        style: Theme.of(context).textTheme.bodySmall
-                            ?.copyWith(color: cs.outline),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: cs.outline,
+                          fontFamily: 'monospace',
+                          fontSize: 12,
+                        ),
                       ),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: pillBg.withAlpha(40),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        pillText,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: pillFg,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
               const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    item.price == null ? '-' : item.price!.toStringAsFixed(2),
-                    style: Theme.of(context).textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _isOut
-                          ? cs.errorContainer
-                          : _isLow
-                          ? cs.tertiaryContainer
-                          : cs.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      'In stock: ${item.quantity}',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: _isOut
-                            ? cs.onErrorContainer
-                            : _isLow
-                            ? cs.onTertiaryContainer
-                            : cs.onSurfaceVariant,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
+              Text(
+                item.price == null ? '-' : item.price!.toStringAsFixed(2),
+                style: Theme.of(context).textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w800, color: cs.primary),
               ),
               PopupMenuButton<String>(
                 tooltip: 'Actions',
@@ -313,6 +306,26 @@ class _ItemCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ImagePlaceholder extends StatelessWidget {
+  const _ImagePlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 60,
+      height: 60,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFE0E7FF), Color(0xFFEDE9FE)],
+        ),
+      ),
+      child: const Icon(Icons.inventory_2_outlined, color: kBrandPrimary),
     );
   }
 }

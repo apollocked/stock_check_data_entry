@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../../domain/entities/stock_movement.dart';
 import '../controllers/inventory_controllers.dart';
 import '../widgets/movement_tile.dart';
@@ -88,12 +89,11 @@ class _ReportsTabState extends ConsumerState<ReportsTab>
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              _StatCard(
-                label: 'Stock value',
-                value: report.stockValue.toStringAsFixed(2),
+              const SizedBox(height: 12),
+              _HeroCard(
                 icon: Icons.payments_outlined,
-                alignStart: true,
+                title: 'Stock value',
+                value: report.stockValue.toStringAsFixed(2),
               ),
               const SizedBox(height: 16),
               Row(
@@ -246,6 +246,73 @@ class MovementFilterController extends Notifier<MovementType?> {
   void setFilter(MovementType? type) => state = type;
 }
 
+class _HeroCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String value;
+
+  const _HeroCard({
+    required this.icon,
+    required this.title,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: kBrandGradient,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x3D4F46E5),
+            blurRadius: 20,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: Colors.white.withAlpha(40),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(icon, color: Colors.white, size: 28),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.bodyMedium
+                      ?.copyWith(color: Colors.white.withAlpha(230)),
+                ),
+                Text(
+                  value,
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _StatCard extends StatelessWidget {
   final String label;
   final String value;
@@ -265,8 +332,11 @@ class _StatCard extends StatelessWidget {
 
     return Expanded(
       child: Card(
-        elevation: 0,
-        color: cs.surfaceContainerLow,
+        color: cs.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: cs.outlineVariant.withAlpha(60)),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -274,14 +344,22 @@ class _StatCard extends StatelessWidget {
                 ? CrossAxisAlignment.start
                 : CrossAxisAlignment.center,
             children: [
-              Icon(icon, color: cs.primary),
-              const SizedBox(height: 8),
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: cs.primaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: cs.primary, size: 22),
+              ),
+              const SizedBox(height: 10),
               Text(
                 value,
-                style: Theme.of(context).textTheme.headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w800),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               Text(
                 label,
                 style: Theme.of(context).textTheme.bodySmall
@@ -309,26 +387,31 @@ class _MiniStat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Card(
-        elevation: 0,
-        color: color.withAlpha(25),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Column(
-            children: [
-              Text(
-                value,
-                style: Theme.of(context).textTheme.titleMedium
-                    ?.copyWith(color: color, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 2),
-              Text(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: color.withAlpha(28),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          children: [
+            Text(
+              value,
+              style: Theme.of(context).textTheme.titleLarge
+                  ?.copyWith(color: color, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 2),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text(
                 label,
-                style: Theme.of(context).textTheme.bodySmall
-                    ?.copyWith(color: color),
+                maxLines: 2,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.labelSmall
+                    ?.copyWith(color: color, fontWeight: FontWeight.w600),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -350,25 +433,34 @@ class _AlertCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: color.withAlpha(20),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Icon(icon, color: color),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(title, style: Theme.of(context).textTheme.titleSmall),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withAlpha(20),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withAlpha(60)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: color.withAlpha(40),
+              borderRadius: BorderRadius.circular(12),
             ),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.titleMedium
-                  ?.copyWith(color: color, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
+            child: Icon(icon, color: color),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(title, style: Theme.of(context).textTheme.titleSmall),
+          ),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleMedium
+                ?.copyWith(color: color, fontWeight: FontWeight.bold),
+          ),
+        ],
       ),
     );
   }
