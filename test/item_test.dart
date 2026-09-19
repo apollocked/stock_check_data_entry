@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:stock_check_entry/domain/entities/item.dart';
+import 'package:stockly/domain/entities/item.dart';
 
 void main() {
   group('Item.fromMap', () {

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:stock_check_entry/domain/entities/stock_movement.dart';
-import 'package:stock_check_entry/domain/entities/stock_report.dart';
+import 'package:stockly/domain/entities/stock_movement.dart';
+import 'package:stockly/domain/entities/stock_report.dart';
 
 void main() {
   group('StockMovement', () {
