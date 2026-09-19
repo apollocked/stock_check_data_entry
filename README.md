@@ -1,17 +1,18 @@
-# Inventory Manager
+# Stockly
 
-A Flutter inventory and stock-check application for tracking items, monitoring stock movements, and exporting inventory data for reporting.
+Stockly is a Flutter inventory and stock-management app for tracking items, monitoring stock movements (in / out / damage / adjustments), reviewing reports, and exporting data for accounting.
 
 ## Overview
 
-This project is built for warehouse, retail, and stock-taking workflows where teams need to:
+This project is built for warehouse, retail, and stock-checking workflows where teams need to:
 
-- track inventory items and quantities
-- search and filter stock quickly
-- log stock movements such as inbound, outbound, and damage adjustments
+- track inventory items and quantities (including zero and negative stock)
+- search and filter stock quickly by name or barcode
+- log stock movements such as inbound, outbound, damage, and corrections
 - capture item details, barcode references, and photos
-- review stock summaries and low-stock alerts
-- export inventory data to CSV for sharing and reporting
+- browse daily history with a calendar and per-day summaries
+- review stock summaries, low-stock alerts, and category counts (in stock / zero / minus)
+- export inventory data to CSV and Excel for sharing and reporting
 
 The app uses Supabase for authentication and backend data storage, and Riverpod for state management.
 
@@ -19,13 +20,15 @@ The app uses Supabase for authentication and backend data storage, and Riverpod 
 
 - Email/password sign-in and account creation with Supabase Auth
 - Inventory dashboard with search and refresh
-- Add, edit, and delete inventory items
-- Barcode-based item lookup and entry flow
+- Add, edit, and delete inventory items via barcode flow or manual entry
 - Per-store configurable item fields
-- Stock movement tracking and reporting overview
-- Low-stock and out-of-stock alerts
-- CSV export and share support
+- Stock movement tracking (Stock in, Stock out, Damage) with signed quantities
+- Adjust-stock corrections that accept positive and negative values
+- Calendar history of stock movements with daily in/out/damage summaries
+- Reporting overview: totals, stock value, low-stock alerts, and in-stock / zero / minus counts
+- CSV export and multi-sheet Excel report export (Overview, Inventory, Movements)
 - Image support for product records
+- Branded Material 3 design with app icon
 
 ## Tech Stack
 
@@ -36,6 +39,7 @@ The app uses Supabase for authentication and backend data storage, and Riverpod 
 - Mobile Scanner
 - Image Picker
 - CSV export utilities
+- Excel export utilities
 - Share Plus
 
 ## Project Structure
@@ -44,6 +48,8 @@ The app uses Supabase for authentication and backend data storage, and Riverpod 
 .
 ├── android/                     # Android project files
 ├── ios/                         # iOS project files
+├── assets/
+│   └── branding/                # App logo
 ├── lib/
 │   ├── core/                    # App configuration and theme
 │   ├── data/                    # Repositories and data sources
@@ -106,7 +112,7 @@ class Config {
 For a clean setup, you should also configure:
 
 - Supabase Auth for sign-in/sign-up
-- the required database tables used by the inventory workflow
+- the required database tables used by the stock workflow
 - RLS policies if your project is shared across users
 
 ## Local Development Notes
@@ -114,16 +120,17 @@ For a clean setup, you should also configure:
 - The app entry point is `lib/main.dart`.
 - State management is handled with Riverpod.
 - Business logic is separated into domain/data/presentation layers.
-- The inventory screens are currently designed around a single-store stock workflow and can be extended for multi-store or multi-user requirements.
+- The app is designed around a single-store stock workflow and can be extended for multi-store or multi-user requirements.
+- The app name and launcher icon can be regenerated from `assets/branding/logo.png` using `flutter_launcher_icons`.
 
 ## Typical Workflow
 
 1. Sign in or create an account
-2. Select or configure the store and custom item fields
+2. Configure the store and custom item fields
 3. Add new items or scan barcodes to locate records
-4. Update stock quantities and record stock movements
-5. Review the reporting tab for totals, warnings, and movement history
-6. Export inventory data to CSV when needed
+4. Update stock with Stock in / Stock out / Damage, or fix counts with Adjust stock
+5. Review the calendar history and reporting overview
+6. Export inventory data to CSV or Excel when needed
 
 ## License
 

@@ -285,7 +285,7 @@ class _HeroCard extends StatelessWidget {
               color: Colors.white.withAlpha(40),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Icon(icon, color: Colors.white, size: 28),
+            child: Icon(icon, color: Colors.white, size: 28),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -317,13 +317,11 @@ class _StatCard extends StatelessWidget {
   final String label;
   final String value;
   final IconData icon;
-  final bool alignStart;
 
   const _StatCard({
     required this.label,
     required this.value,
     required this.icon,
-    this.alignStart = false,
   });
 
   @override
@@ -340,9 +338,7 @@ class _StatCard extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
-            crossAxisAlignment: alignStart
-                ? CrossAxisAlignment.start
-                : CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
                 width: 40,

@@ -165,19 +165,27 @@ class _HintCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Card(
       elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: cs.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: cs.outlineVariant.withAlpha(60)),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.qr_code_2,
-              size: 48,
-              color: Theme.of(context).colorScheme.outline,
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: cs.primaryContainer,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(Icons.qr_code_2, color: cs.primary),
             ),
             const SizedBox(height: 12),
             Text(
@@ -224,8 +232,11 @@ class _FoundItemCardState extends State<_FoundItemCard> {
     return Card(
       clipBehavior: Clip.antiAlias,
       elevation: 0,
-      color: cs.surfaceContainerLow,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: cs.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: cs.outlineVariant.withAlpha(60)),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -234,7 +245,7 @@ class _FoundItemCardState extends State<_FoundItemCard> {
             Text(
               'Item already in inventory',
               style: Theme.of(context).textTheme.labelLarge
-                  ?.copyWith(color: cs.primary),
+                  ?.copyWith(color: cs.primary, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 12),
             Row(
@@ -329,7 +340,10 @@ class _NotFoundCard extends StatelessWidget {
     return Card(
       elevation: 0,
       color: cs.errorContainer,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: cs.outlineVariant.withAlpha(60)),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(

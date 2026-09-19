@@ -333,7 +333,12 @@ class _ImagePickerCard extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.outlineVariant.withAlpha(60),
+        ),
+      ),
       child: Column(
         children: [
           Container(

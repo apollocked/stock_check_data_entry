@@ -133,7 +133,10 @@ class _FieldTileState extends State<_FieldTile> {
       color: _checked
           ? cs.primaryContainer.withAlpha(80)
           : cs.surfaceContainerHighest,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: cs.outlineVariant.withAlpha(60)),
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(
