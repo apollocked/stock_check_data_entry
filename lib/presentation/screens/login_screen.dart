@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/config.dart';
 import '../../core/error/error_messages.dart';
 import '../../core/theme/app_theme.dart';
 import '../widgets/brand_logo.dart';
@@ -38,7 +39,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     try {
       if (_isSignUp) {
-        final response = await auth.signUp(email: email, password: password);
+        final response = await auth.signUp(
+          email: email,
+          password: password,
+          emailRedirectTo: Config.authRedirectUrl,
+        );
         if (!mounted) return;
         if (response.session == null) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -59,6 +64,44 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(friendlyError(e))));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(friendlyError(e))));
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _forgotPassword() async {
+    final email = _emailController.text.trim();
+    if (!email.contains('@')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Enter your email above, then tap "Forgot password?".'),
+        ),
+      );
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      await Supabase.instance.client.auth.resetPasswordForEmail(
+        email,
+        redirectTo: Config.authRedirectUrl,
+      );
+      if (mounted) {
+        // Same answer whether or not the account exists.
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'If an account exists for $email, a reset link is on its way. '
+              'Open it on this phone.',
+            ),
+            duration: const Duration(seconds: 8),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -144,7 +187,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ? null
                           : 'At least 6 characters',
                     ),
-                    const SizedBox(height: 24),
+                    if (!_isSignUp)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: _busy ? null : _forgotPassword,
+                          child: const Text('Forgot password?'),
+                        ),
+                      )
+                    else
+                      const SizedBox(height: 16),
+                    const SizedBox(height: 8),
                     DecoratedBox(
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(colors: kBrandGradient),

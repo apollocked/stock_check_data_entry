@@ -7,6 +7,7 @@ import 'core/theme/app_theme.dart';
 import 'presentation/controllers/auth_controllers.dart';
 import 'presentation/screens/home_screen.dart';
 import 'presentation/screens/login_screen.dart';
+import 'presentation/screens/reset_password_screen.dart';
 import 'presentation/widgets/brand_logo.dart';
 
 Future<void> main() async {
@@ -35,8 +36,11 @@ class StocklyApp extends ConsumerWidget {
           .watch(sessionStateProvider)
           .when(
             loading: () => const _Splash(),
-            data: (signedIn) =>
-                signedIn ? const HomeScreen() : const LoginScreen(),
+            data: (status) => switch (status) {
+              AuthStatus.signedIn => const HomeScreen(),
+              AuthStatus.passwordRecovery => const ResetPasswordScreen(),
+              AuthStatus.signedOut => const LoginScreen(),
+            },
             error: (_, _) => const LoginScreen(),
           ),
     );

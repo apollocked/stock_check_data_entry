@@ -14,5 +14,6 @@ void main() {
     expect(find.text('Stockly'), findsOneWidget);
     expect(find.text('Sign in'), findsOneWidget);
     expect(find.text('Email'), findsOneWidget);
+    expect(find.text('Forgot password?'), findsOneWidget);
   });
 }

@@ -18,7 +18,7 @@ The app uses Supabase for authentication and backend data storage, and Riverpod 
 
 ## Features
 
-- Email/password sign-in and account creation with Supabase Auth
+- Email/password sign-in and account creation with Supabase Auth, including password reset
 - Inventory dashboard with search and refresh
 - Add, edit, and delete inventory items via barcode flow or manual entry
 - Per-store configurable item fields
@@ -122,6 +122,15 @@ For a clean setup, you should also configure:
 - the database: run [`supabase/schema.sql`](supabase/schema.sql) once in the Supabase SQL editor. It creates the tables, the `record_stock_movement` and `branch_stock_report` functions, the RLS policies, the `grocery_images` storage bucket, and the first store.
 
 The RLS policies give every signed-in user full access. Tighten them if the project is shared across teams.
+
+### Email links (confirmation and password reset)
+
+Sign-up confirmation and "Forgot password?" emails open the app through a deep link, `com.apollocked.stockly://login-callback/` (`Config.authRedirectUrl`). For this to work:
+
+1. In the Supabase dashboard go to **Authentication → URL Configuration** and add `com.apollocked.stockly://login-callback/` to **Redirect URLs**.
+2. Keep the scheme in sync with `android/app/src/main/AndroidManifest.xml` and `ios/Runner/Info.plist` if you change it.
+3. Open the email on the phone that has the app installed.
+
 
 ## Android Release Build
 
