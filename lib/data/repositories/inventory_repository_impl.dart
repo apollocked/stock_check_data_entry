@@ -1,6 +1,7 @@
 import 'package:cross_file/cross_file.dart';
 
 import '../../core/error/app_exception.dart';
+import '../../core/error/error_messages.dart';
 import '../../domain/entities/item.dart';
 import '../../domain/entities/stock_movement.dart';
 import '../../domain/entities/stock_report.dart';
@@ -21,7 +22,11 @@ class InventoryRepositoryImpl implements InventoryRepository {
       final row = await _remote.fetchStore();
       return Store.fromMap(row);
     } catch (e) {
-      throw AppException('Could not load store: $e', AppExceptionType.network);
+      throw toAppException(
+        e,
+        'Could not load store.',
+        AppExceptionType.network,
+      );
     }
   }
 
@@ -34,7 +39,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
       final row = await _remote.updateStore(storeId: storeId, updates: updates);
       return Store.fromMap(row);
     } catch (e) {
-      throw AppException('Could not update store: $e');
+      throw toAppException(e, 'Could not update store.');
     }
   }
 
@@ -43,7 +48,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
     try {
       return await _storage.upload(imageFile, barcode: barcode);
     } catch (e) {
-      throw AppException('Image upload failed: $e', AppExceptionType.storage);
+      throw toAppException(e, 'Image upload failed.', AppExceptionType.storage);
     }
   }
 
@@ -69,7 +74,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
       );
       return Item.fromMap(row);
     } catch (e) {
-      throw AppException('Could not save item: $e');
+      throw toAppException(e, 'Could not save item.');
     }
   }
 
@@ -79,7 +84,11 @@ class InventoryRepositoryImpl implements InventoryRepository {
       final rows = await _remote.fetchItems();
       return [for (final row in rows) Item.fromMap(row)];
     } catch (e) {
-      throw AppException('Could not load items: $e', AppExceptionType.network);
+      throw toAppException(
+        e,
+        'Could not load items.',
+        AppExceptionType.network,
+      );
     }
   }
 
@@ -89,7 +98,11 @@ class InventoryRepositoryImpl implements InventoryRepository {
       final row = await _remote.searchByBarcode(barcode);
       return row == null ? null : Item.fromMap(row);
     } catch (e) {
-      throw AppException('Barcode lookup failed: $e', AppExceptionType.network);
+      throw toAppException(
+        e,
+        'Barcode lookup failed.',
+        AppExceptionType.network,
+      );
     }
   }
 
@@ -115,7 +128,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
       );
       return Item.fromMap(row);
     } catch (e) {
-      throw AppException('Could not update item: $e');
+      throw toAppException(e, 'Could not update item.');
     }
   }
 
@@ -125,7 +138,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
       await _remote.deleteItem(item.id);
       await _storage.remove(item.imageUrl);
     } catch (e) {
-      throw AppException('Could not delete item: $e');
+      throw toAppException(e, 'Could not delete item.');
     }
   }
 
@@ -144,7 +157,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
         note: note,
       );
     } catch (e) {
-      throw AppException('Could not record movement: $e');
+      throw toAppException(e, 'Could not record movement.');
     }
   }
 
@@ -157,8 +170,9 @@ class InventoryRepositoryImpl implements InventoryRepository {
       final rows = await _remote.fetchMovements(type: type?.code, day: day);
       return [for (final row in rows) StockMovement.fromMap(row)];
     } catch (e) {
-      throw AppException(
-        'Could not load movements: $e',
+      throw toAppException(
+        e,
+        'Could not load movements.',
         AppExceptionType.network,
       );
     }
@@ -170,7 +184,11 @@ class InventoryRepositoryImpl implements InventoryRepository {
       final row = await _remote.fetchStockReport(storeId);
       return StockReport.fromMap(row);
     } catch (e) {
-      throw AppException('Could not load report: $e', AppExceptionType.network);
+      throw toAppException(
+        e,
+        'Could not load report.',
+        AppExceptionType.network,
+      );
     }
   }
 }

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import '../../core/error/error_messages.dart';
 import '../../domain/entities/item.dart';
 import '../providers/repository_providers.dart';
 import 'new_item_form_screen.dart';
@@ -61,7 +62,7 @@ class _BarcodeLookupScreenState extends ConsumerState<BarcodeLookupScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Lookup failed: $e')));
+            .showSnackBar(SnackBar(content: Text(friendlyError(e))));
         setState(() => _state = _LookupState.idle);
       }
     }

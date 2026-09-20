@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/error/error_messages.dart';
 import '../../domain/entities/store.dart';
 import '../controllers/inventory_controllers.dart';
 
@@ -25,7 +26,7 @@ class _ItemFieldsScreenState extends ConsumerState<ItemFieldsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not save: $e')));
+            .showSnackBar(SnackBar(content: Text(friendlyError(e))));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -40,7 +41,8 @@ class _ItemFieldsScreenState extends ConsumerState<ItemFieldsScreen> {
       appBar: AppBar(title: const Text('Item fields')),
       body: storeAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('Error: $error')),
+        error: (error, _) =>
+            Center(child: Text('Error: ${friendlyError(error)}')),
         data: (store) {
           final fields = store.enabledFields;
 

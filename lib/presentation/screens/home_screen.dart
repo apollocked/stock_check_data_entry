@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/error/error_messages.dart';
 import '../../core/theme/app_theme.dart';
 import '../../domain/entities/item.dart';
 import '../controllers/auth_controllers.dart';
@@ -42,7 +43,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         _showSnackBar('Exported ${items.length} items. Saved to: ${file.path}');
       }
     } catch (e) {
-      _showSnackBar('Export failed: $e', isError: true);
+      _showSnackBar(friendlyError(e), isError: true);
     } finally {
       if (mounted) setState(() => _exporting = false);
     }
@@ -68,7 +69,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         _showSnackBar('Excel report saved to: ${file.path}');
       }
     } catch (e) {
-      _showSnackBar('Excel export failed: $e', isError: true);
+      _showSnackBar(friendlyError(e), isError: true);
     } finally {
       if (mounted) setState(() => _exporting = false);
     }
@@ -210,7 +211,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Could not load store: $error', textAlign: TextAlign.center),
+              Text(
+                'Could not load store: ${friendlyError(error)}',
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 12),
               FilledButton.tonal(
                 onPressed: () => ref.invalidate(storeProvider),

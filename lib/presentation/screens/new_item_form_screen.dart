@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../core/error/error_messages.dart';
 import '../../core/error/app_exception.dart';
 import '../../domain/entities/item.dart';
 import '../../domain/entities/store.dart';
@@ -78,7 +79,10 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
       );
       if (image != null) setState(() => _pickedImage = image);
     } catch (e) {
-      _showSnackBar('Could not pick image: $e', isError: true);
+      _showSnackBar(
+        'Could not pick the image. Check the app has photo and camera access.',
+        isError: true,
+      );
     }
   }
 
@@ -164,7 +168,7 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
     } on AppException catch (e) {
       _showSnackBar(e.message, isError: true);
     } catch (e) {
-      _showSnackBar('Unexpected error: $e', isError: true);
+      _showSnackBar(friendlyError(e), isError: true);
     } finally {
       if (mounted) setState(() => _submitting = false);
     }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/error/error_messages.dart';
 import '../../core/theme/app_theme.dart';
 import '../../domain/entities/item.dart';
 import '../controllers/inventory_controllers.dart';
@@ -49,7 +50,7 @@ class _InventoryTabState extends ConsumerState<InventoryTab> {
       ref.invalidate(itemsProvider);
       if (mounted) _showSnackBar('Deleted "${item.name}".');
     } catch (e) {
-      _showSnackBar('$e', isError: true);
+      _showSnackBar(friendlyError(e), isError: true);
     }
   }
 
@@ -94,7 +95,7 @@ class _InventoryTabState extends ConsumerState<InventoryTab> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Failed to load items:\n$error',
+                    'Failed to load items:\n${friendlyError(error)}',
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 12),

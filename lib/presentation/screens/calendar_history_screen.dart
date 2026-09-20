@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/error/error_messages.dart';
 import '../../domain/entities/stock_movement.dart';
 import '../controllers/inventory_controllers.dart';
 import '../widgets/movement_tile.dart';
@@ -120,7 +121,7 @@ class _CalendarHistoryScreenState extends ConsumerState<CalendarHistoryScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Could not load history:\n$error',
+                      'Could not load history:\n${friendlyError(error)}',
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 12),

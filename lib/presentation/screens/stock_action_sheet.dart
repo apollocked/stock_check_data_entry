@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/error/error_messages.dart';
 import '../../core/error/app_exception.dart';
 import '../../domain/entities/item.dart';
 import '../../domain/entities/stock_movement.dart';
@@ -64,7 +65,7 @@ class _StockActionSheetState extends ConsumerState<StockActionSheet> {
     } on AppException catch (e) {
       await _onError(e.message);
     } catch (e) {
-      await _onError('Failed: $e');
+      await _onError(friendlyError(e));
     }
   }
 
@@ -93,7 +94,7 @@ class _StockActionSheetState extends ConsumerState<StockActionSheet> {
     } on AppException catch (e) {
       await _onError(e.message);
     } catch (e) {
-      await _onError('Failed: $e');
+      await _onError(friendlyError(e));
     }
   }
 

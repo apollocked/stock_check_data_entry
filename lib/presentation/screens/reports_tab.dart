@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/error/error_messages.dart';
 import '../../core/theme/app_theme.dart';
 import '../../domain/entities/stock_movement.dart';
 import '../controllers/inventory_controllers.dart';
@@ -56,7 +57,10 @@ class _ReportsTabState extends ConsumerState<ReportsTab>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Could not load report: $error', textAlign: TextAlign.center),
+            Text(
+              'Could not load report: ${friendlyError(error)}',
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 12),
             FilledButton.tonal(
               onPressed: () => ref.invalidate(reportProvider),
@@ -194,7 +198,7 @@ class _ReportsTabState extends ConsumerState<ReportsTab>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Could not load movements:\n$error',
+                    'Could not load movements:\n${friendlyError(error)}',
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 12),
