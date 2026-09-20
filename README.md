@@ -112,8 +112,9 @@ class Config {
 For a clean setup, you should also configure:
 
 - Supabase Auth for sign-in/sign-up
-- the required database tables used by the stock workflow
-- RLS policies if your project is shared across users
+- the database: run [`supabase/schema.sql`](supabase/schema.sql) once in the Supabase SQL editor. It creates the tables, the `record_stock_movement` and `branch_stock_report` functions, the RLS policies, the `grocery_images` storage bucket, and the first store.
+
+The RLS policies give every signed-in user full access. Tighten them if the project is shared across teams.
 
 ## Local Development Notes
 
