@@ -90,24 +90,31 @@ cd stock_check_entry
 flutter pub get
 ```
 
-3. Run the app:
+3. Add your Supabase credentials (see [Supabase Configuration](#supabase-configuration)):
 
 ```bash
-flutter run
+cp env.example.json env.json
 ```
+
+4. Run the app:
+
+```bash
+flutter run --dart-define-from-file=env.json
+```
+
+The VS Code launch configurations in `.vscode/launch.json` already pass this flag.
 
 ## Supabase Configuration
 
-This project is already initialized with Supabase in `lib/main.dart` and uses project credentials stored in `lib/core/config.dart`.
+Supabase is initialized in `lib/main.dart`. The project URL and key are not stored in the source: they are read at build time from `--dart-define` values in `lib/core/config.dart`.
 
-Update the values in `lib/core/config.dart` if you want to point the app to a different Supabase instance:
+Copy `env.example.json` to `env.json` (git-ignored) and fill in your project's URL and publishable (anon) key. Use the same flag for release builds:
 
-```dart
-class Config {
-  static const String supabaseUrl = 'YOUR_SUPABASE_URL';
-  static const String supabaseAnonKey = 'YOUR_SUPABASE_ANON_KEY';
-}
+```bash
+flutter build apk --release --dart-define-from-file=env.json
 ```
+
+If the values are missing, the app shows a setup message instead of crashing.
 
 For a clean setup, you should also configure:
 

@@ -11,6 +11,10 @@ import 'presentation/widgets/brand_logo.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (!Config.isConfigured) {
+    runApp(const _MissingConfigApp());
+    return;
+  }
   await Supabase.initialize(
     url: Config.supabaseUrl,
     publishableKey: Config.supabaseAnonKey,
@@ -35,6 +39,33 @@ class StocklyApp extends ConsumerWidget {
                 signedIn ? const HomeScreen() : const LoginScreen(),
             error: (_, _) => const LoginScreen(),
           ),
+    );
+  }
+}
+
+class _MissingConfigApp extends StatelessWidget {
+  const _MissingConfigApp();
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Stockly',
+      debugShowCheckedModeBanner: false,
+      theme: appTheme,
+      home: const Scaffold(
+        body: Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Text(
+              'Supabase is not configured.\n\n'
+              'Copy env.example.json to env.json, fill in your project URL '
+              'and key, then run with:\n'
+              'flutter run --dart-define-from-file=env.json',
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
