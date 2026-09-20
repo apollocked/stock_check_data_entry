@@ -123,6 +123,16 @@ For a clean setup, you should also configure:
 
 The RLS policies give every signed-in user full access. Tighten them if the project is shared across teams.
 
+## Android Release Build
+
+- The application ID is `com.apollocked.stockly` (set in `android/app/build.gradle.kts`). Change it before your first Play Store upload if you want a different one; it cannot change afterwards.
+- Release builds are signed with your own keystore. Create one with `keytool`, copy `android/key.properties.example` to `android/key.properties` (git-ignored) and fill it in. Without that file, release builds fall back to the debug key and print a warning. Do not upload those.
+- Release builds have code shrinking and resource shrinking enabled (R8). Extra keep rules go in `android/app/proguard-rules.pro`.
+
+```bash
+flutter build appbundle --release --dart-define-from-file=env.json
+```
+
 ## Local Development Notes
 
 - The app entry point is `lib/main.dart`.
