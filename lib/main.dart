@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -12,6 +13,7 @@ import 'presentation/widgets/brand_logo.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   if (!Config.isConfigured) {
     runApp(const _MissingConfigApp());
     return;
@@ -31,7 +33,9 @@ class StocklyApp extends ConsumerWidget {
     return MaterialApp(
       title: 'Stockly',
       debugShowCheckedModeBanner: false,
-      theme: appTheme,
+      theme: lightTheme,
+      darkTheme: darkTheme,
+      themeMode: ThemeMode.system,
       home: ref
           .watch(sessionStateProvider)
           .when(
@@ -55,7 +59,9 @@ class _MissingConfigApp extends StatelessWidget {
     return MaterialApp(
       title: 'Stockly',
       debugShowCheckedModeBanner: false,
-      theme: appTheme,
+      theme: lightTheme,
+      darkTheme: darkTheme,
+      themeMode: ThemeMode.system,
       home: const Scaffold(
         body: Center(
           child: Padding(
