@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../../core/error/error_messages.dart';
 import '../../core/error/app_exception.dart';
 import '../../domain/entities/item.dart';
@@ -179,7 +180,7 @@ class _StockActionSheetState extends ConsumerState<StockActionSheet> {
                               : quantity == 0
                               ? cs.tertiary
                               : quantity <= 5
-                              ? Colors.orange.shade800
+                              ? context.status.warning
                               : cs.primary,
                           fontWeight: FontWeight.bold,
                         ),

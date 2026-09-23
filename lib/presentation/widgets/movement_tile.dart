@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../../domain/entities/stock_movement.dart';
 
 class MovementTile extends StatelessWidget {
@@ -12,9 +13,12 @@ class MovementTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final (color, icon) = switch (movement.type) {
-      MovementType.inbound => (Colors.green, Icons.south_west),
-      MovementType.outbound => (Colors.blue, Icons.north_east),
-      MovementType.damage => (Colors.red, Icons.report_problem_outlined),
+      MovementType.inbound => (context.status.success, Icons.south_west),
+      MovementType.outbound => (context.status.info, Icons.north_east),
+      MovementType.damage => (
+        context.status.danger,
+        Icons.report_problem_outlined,
+      ),
     };
 
     return Card(

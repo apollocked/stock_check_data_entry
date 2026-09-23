@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../../core/error/error_messages.dart';
 import '../../domain/entities/stock_movement.dart';
 import '../controllers/inventory_controllers.dart';
@@ -214,15 +215,15 @@ class _DaySummary extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _Chip(label: 'In +$inQty', color: Colors.green),
+          _Chip(label: 'In +$inQty', color: context.status.success),
           const SizedBox(width: 8),
-          _Chip(label: 'Out -$outQty', color: Colors.blue),
+          _Chip(label: 'Out -$outQty', color: context.status.info),
           const SizedBox(width: 8),
-          _Chip(label: 'Damage -$damageQty', color: Colors.red),
+          _Chip(label: 'Damage -$damageQty', color: context.status.danger),
           const SizedBox(width: 8),
           _Chip(
             label: 'Net ${net >= 0 ? '+' : ''}$net',
-            color: net < 0 ? Colors.red : Colors.green,
+            color: net < 0 ? context.status.danger : context.status.success,
           ),
         ],
       ),

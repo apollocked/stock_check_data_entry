@@ -180,24 +180,24 @@ class _ItemCard extends StatelessWidget {
     required this.onDelete,
   });
 
-  (Color, String, Color) get _stockBadge {
+  (Color, String, Color) _stockBadge(StatusColors sc) {
     final qty = item.quantity;
     if (qty < 0) {
-      return (Colors.red, 'Minus: $qty', Colors.red);
+      return (sc.danger, 'Minus: $qty', sc.danger);
     }
     if (qty == 0) {
-      return (Colors.grey.shade600, 'Zero stock', Colors.grey.shade600);
+      return (sc.neutral, 'Zero stock', sc.neutral);
     }
     if (qty <= 5) {
-      return (Colors.orange.shade700, 'Low: $qty', Colors.orange.shade700);
+      return (sc.warning, 'Low: $qty', sc.warning);
     }
-    return (Colors.green.shade700, '$qty in stock', Colors.green.shade700);
+    return (sc.success, '$qty in stock', sc.success);
   }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final (pillBg, pillText, pillFg) = _stockBadge;
+    final (pillBg, pillText, pillFg) = _stockBadge(context.status);
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -284,8 +284,8 @@ class _ItemCard extends StatelessWidget {
                       onDelete();
                   }
                 },
-                itemBuilder: (context) => const [
-                  PopupMenuItem(
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
                     value: 'edit',
                     child: ListTile(
                       leading: Icon(Icons.edit_outlined),
@@ -296,7 +296,10 @@ class _ItemCard extends StatelessWidget {
                   PopupMenuItem(
                     value: 'delete',
                     child: ListTile(
-                      leading: Icon(Icons.delete_outline, color: Colors.red),
+                      leading: Icon(
+                        Icons.delete_outline,
+                        color: context.status.danger,
+                      ),
                       title: Text('Delete'),
                       contentPadding: EdgeInsets.zero,
                     ),
@@ -319,14 +322,20 @@ class _ImagePlaceholder extends StatelessWidget {
     return Container(
       width: 60,
       height: 60,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFE0E7FF), Color(0xFFEDE9FE)],
+          colors: [
+            Theme.of(context).colorScheme.primaryContainer,
+            Theme.of(context).colorScheme.secondaryContainer,
+          ],
         ),
       ),
-      child: const Icon(Icons.inventory_2_outlined, color: kBrandPrimary),
+      child: Icon(
+        Icons.inventory_2_outlined,
+        color: Theme.of(context).colorScheme.primary,
+      ),
     );
   }
 }
