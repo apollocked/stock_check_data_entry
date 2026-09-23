@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/error/error_messages.dart';
-import '../../core/theme/app_theme.dart';
 import '../../domain/entities/item.dart';
 import '../controllers/auth_controllers.dart';
 import '../controllers/inventory_controllers.dart';
@@ -13,6 +12,19 @@ import 'calendar_history_screen.dart';
 import 'item_fields_screen.dart';
 import 'inventory_tab.dart';
 import 'reports_tab.dart';
+
+enum _MenuAction { history, fields, signOut }
+
+class _BusyIcon extends StatelessWidget {
+  const _BusyIcon();
+
+  @override
+  Widget build(BuildContext context) => const SizedBox(
+    width: 20,
+    height: 20,
+    child: CircularProgressIndicator(strokeWidth: 2),
+  );
+}
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -81,6 +93,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (mounted) ref.invalidate(dayMovementsProvider);
   }
 
+  Future<void> _openFields() async {
+    await Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const ItemFieldsScreen()));
+    if (mounted) ref.invalidate(storeProvider);
+  }
+
   Future<void> _logout() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -139,30 +157,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           data: (store) => Text(store.name),
           orElse: () => const Text('Stockly'),
         ),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: kBrandGradient,
-            ),
-          ),
-        ),
-        foregroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           if (_tabIndex == 0)
             IconButton(
               tooltip: 'Export CSV',
               icon: _exporting
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
+                  ? const _BusyIcon()
                   : const Icon(Icons.ios_share),
               onPressed: items == null || _exporting
                   ? null
@@ -171,37 +171,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           if (_tabIndex == 1)
             IconButton(
               tooltip: 'Export Excel report',
-              icon: _exporting
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(Icons.grid_on),
+              icon: _exporting ? const _BusyIcon() : const Icon(Icons.grid_on),
               onPressed: _exporting ? null : _exportExcel,
             ),
-          IconButton(
-            tooltip: 'History',
-            icon: const Icon(Icons.calendar_month),
-            onPressed: _openHistory,
-          ),
-          IconButton(
-            tooltip: 'Item fields',
-            icon: const Icon(Icons.tune),
-            onPressed: () async {
-              await Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ItemFieldsScreen()),
-              );
-              if (mounted) ref.invalidate(storeProvider);
+          PopupMenuButton<_MenuAction>(
+            tooltip: 'More',
+            onSelected: (action) {
+              switch (action) {
+                case _MenuAction.history:
+                  _openHistory();
+                case _MenuAction.fields:
+                  _openFields();
+                case _MenuAction.signOut:
+                  _logout();
+              }
             },
-          ),
-          IconButton(
-            tooltip: 'Sign out',
-            icon: const Icon(Icons.logout),
-            onPressed: _logout,
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: _MenuAction.history,
+                child: ListTile(
+                  leading: Icon(Icons.calendar_month_outlined),
+                  title: Text('History'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem(
+                value: _MenuAction.fields,
+                child: ListTile(
+                  leading: Icon(Icons.tune),
+                  title: Text('Item fields'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuDivider(),
+              PopupMenuItem(
+                value: _MenuAction.signOut,
+                child: ListTile(
+                  leading: Icon(Icons.logout),
+                  title: Text('Sign out'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
           ),
         ],
       ),
