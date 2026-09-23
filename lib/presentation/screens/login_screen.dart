@@ -4,7 +4,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config.dart';
 import '../../core/error/error_messages.dart';
-import '../../core/theme/app_theme.dart';
 import '../widgets/brand_logo.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -119,11 +118,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFF5F3FF), Color(0xFFEEF2FF), Color(0xFFF9FAFB)],
+            colors: [
+              Color.alphaBlend(cs.primary.withAlpha(28), cs.surface),
+              cs.surface,
+            ],
           ),
         ),
         child: Center(
@@ -198,37 +200,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     else
                       const SizedBox(height: 16),
                     const SizedBox(height: 8),
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(colors: kBrandGradient),
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x664F46E5),
-                            blurRadius: 16,
-                            offset: Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: FilledButton(
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size.fromHeight(52),
-                          backgroundColor: Colors.transparent,
-                          shadowColor: Colors.transparent,
-                          disabledBackgroundColor: cs.primary.withAlpha(150),
-                        ),
-                        onPressed: _busy ? null : _submit,
-                        child: _busy
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Text(_isSignUp ? 'Create account' : 'Sign in'),
-                      ),
+                    FilledButton(
+                      onPressed: _busy ? null : _submit,
+                      child: _busy
+                          ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: cs.onPrimary,
+                              ),
+                            )
+                          : Text(_isSignUp ? 'Create account' : 'Sign in'),
                     ),
                     const SizedBox(height: 8),
                     TextButton(
