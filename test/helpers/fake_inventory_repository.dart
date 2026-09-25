@@ -7,7 +7,15 @@ import 'package:stockly/domain/repositories/inventory_repository.dart';
 
 /// In-memory repository for widget tests.
 class FakeInventoryRepository implements InventoryRepository {
-  final store = Store(id: 1, name: 'Corner Shop', fields: defaultValueFields());
+  Store store = Store(
+    id: 1,
+    name: 'Corner Shop',
+    location: 'Main St',
+    fields: defaultValueFields(),
+  );
+
+  /// The last `updates` map passed to [updateStore].
+  Map<String, dynamic>? lastStoreUpdate;
 
   final items = [
     Item(
@@ -62,6 +70,21 @@ class FakeInventoryRepository implements InventoryRepository {
 
   @override
   Future<Store> fetchStore() async => store;
+
+  @override
+  Future<Store> updateStore({
+    required int storeId,
+    required Map<String, dynamic> updates,
+  }) async {
+    lastStoreUpdate = updates;
+    store = Store.fromMap({
+      'id': store.id,
+      'name': updates['name'] ?? store.name,
+      'location': updates['location'] ?? store.location,
+      'fields': updates['fields'] ?? [for (final f in store.fields) f.toMap()],
+    });
+    return store;
+  }
 
   @override
   Future<List<Item>> fetchItems() async => items;

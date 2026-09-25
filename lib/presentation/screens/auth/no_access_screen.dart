@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/error/error_messages.dart';
 import '../../../core/theme/app_tokens.dart';
+import '../../controllers/auth_actions.dart';
 import '../../controllers/auth_controllers.dart';
 import '../../widgets/states/empty_state.dart';
 
@@ -16,7 +16,7 @@ class NoAccessScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final error = ref.watch(accessProvider).error;
-    final email = Supabase.instance.client.auth.currentUser?.email ?? '';
+    final email = ref.read(authActionsProvider).currentEmail ?? '';
 
     return Scaffold(
       body: SafeArea(
@@ -43,7 +43,7 @@ class NoAccessScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: Gap.sm),
                 TextButton(
-                  onPressed: () => Supabase.instance.client.auth.signOut(),
+                  onPressed: () => ref.read(authActionsProvider).signOut(),
                   child: const Text('Sign out'),
                 ),
               ],

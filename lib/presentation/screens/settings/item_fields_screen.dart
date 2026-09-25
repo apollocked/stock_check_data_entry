@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/error/error_messages.dart';
+import '../../../core/theme/app_tokens.dart';
 import '../../../domain/entities/store.dart';
 import '../../controllers/inventory_controllers.dart';
+import '../../widgets/common/busy_button.dart';
+import '../../widgets/feedback/app_feedback.dart';
+import '../../widgets/states/error_state.dart';
+import 'widgets/settings_group.dart';
 
+/// Choose which fields items record. Name and price are always on.
 class ItemFieldsScreen extends ConsumerStatefulWidget {
   const ItemFieldsScreen({super.key});
 
@@ -13,168 +19,109 @@ class ItemFieldsScreen extends ConsumerStatefulWidget {
 }
 
 class _ItemFieldsScreenState extends ConsumerState<ItemFieldsScreen> {
+  /// Edits in progress; null until the store has loaded.
+  Map<String, bool>? _enabled;
+  Map<String, bool> _saved = const {};
   bool _saving = false;
 
-  Future<void> _save(List<ItemField> fields) async {
+  static Map<String, bool> _fromStore(Store store) => {
+    for (final option in defaultValueFields())
+      option.id:
+          option.required ||
+          store.fields.any((f) => f.id == option.id && f.enabled),
+  };
+
+  bool get _changed =>
+      _enabled != null &&
+      _enabled!.entries.any((e) => _saved[e.key] != e.value);
+
+  Future<void> _save() async {
+    // Fix: the old screen kept toggles in each tile and saved the old values.
+    final enabled = _enabled!;
     setState(() => _saving = true);
     try {
-      await ref.read(storeProvider.notifier).updateFields(fields);
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Item fields saved')));
-      }
+      await ref.read(storeProvider.notifier).updateFields([
+        for (final option in defaultValueFields())
+          ItemField(
+            id: option.id,
+            label: option.label,
+            type: option.type,
+            enabled: enabled[option.id]!,
+            required: option.required,
+          ),
+      ]);
+      if (!mounted) return;
+      setState(() => _saved = Map.of(enabled));
+      showAppSnack(context, 'Item fields saved', kind: SnackKind.success);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(friendlyError(e))));
-      }
+      if (mounted) showErrorSnack(context, e);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
 
+  IconData _icon(String type) => switch (type) {
+    'image' => Icons.image_outlined,
+    'number' => Icons.numbers_rounded,
+    _ => Icons.text_fields_rounded,
+  };
+
   @override
   Widget build(BuildContext context) {
-    final storeAsync = ref.watch(storeProvider);
+    final store = ref.watch(storeProvider);
+    final loaded = store.value;
+    if (loaded != null && _enabled == null) {
+      _saved = _fromStore(loaded);
+      _enabled = Map.of(_saved);
+    }
+    final enabled = _enabled;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Item fields')),
-      body: storeAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) =>
-            Center(child: Text('Error: ${friendlyError(error)}')),
-        data: (store) {
-          final fields = store.enabledFields;
-
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Text(
-                'These are the item fields shown in the inventory and CSV export.',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 16),
-              for (final f in kStoreFieldOptions) ...[
-                _FieldTile(field: f, enabled: _isEnabled(fields, f)),
-                const SizedBox(height: 4),
-              ],
-              const SizedBox(height: 24),
-              FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(52),
+      body: enabled == null
+          ? (store.hasError
+                ? ErrorState(
+                    error: store.error!,
+                    onRetry: () => ref.invalidate(storeProvider),
+                  )
+                : const Center(child: CircularProgressIndicator()))
+          : ListView(
+              padding: const EdgeInsets.all(Gap.lg),
+              children: [
+                Text(
+                  'Pick what you record for each item. Fields you turn off '
+                  'are hidden from forms and exports; saved values are kept.',
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
-                onPressed: _saving
-                    ? null
-                    : () async {
-                        final updated = [
-                          for (final f in kStoreFieldOptions)
-                            ItemField(
-                              id: f['id'] as String,
-                              label: f['label'] as String,
-                              type: f['type'] as String,
-                              enabled: _isEnabled(fields, f),
-                              required: f['required'] as bool,
-                            ),
-                        ];
-                        await _save(updated);
-                      },
-                icon: _saving
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.save_outlined),
-                label: Text(_saving ? 'Saving...' : 'Save fields'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  bool _isEnabled(List<ItemField> enabled, Map<String, dynamic> option) {
-    final id = option['id'] as String;
-    final required = option['required'] as bool;
-    final match = enabled.where((f) => f.id == id).toList();
-    if (match.isNotEmpty) return match.first.enabled;
-    return required;
-  }
-}
-
-class _FieldTile extends StatefulWidget {
-  final Map<String, dynamic> field;
-  final bool enabled;
-
-  const _FieldTile({required this.field, required this.enabled});
-
-  @override
-  State<_FieldTile> createState() => _FieldTileState();
-}
-
-class _FieldTileState extends State<_FieldTile> {
-  late bool _checked = widget.enabled;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final label = widget.field['label'] as String;
-    final type = widget.field['type'] as String;
-    final required = widget.field['required'] as bool;
-
-    final typeLabel = switch (type) {
-      'image' => 'img',
-      'number' => '#',
-      'text' => 'T',
-      _ => 'T',
-    };
-
-    return Card(
-      elevation: 0,
-      color: _checked
-          ? cs.primaryContainer.withAlpha(80)
-          : cs.surfaceContainerHighest,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: cs.outlineVariant.withAlpha(60)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              alignment: Alignment.center,
-              child: Text(typeLabel, style: TextStyle(color: cs.outline)),
+                const SizedBox(height: Gap.lg),
+                SettingsGroup(
+                  children: [
+                    for (final option in defaultValueFields())
+                      SwitchListTile(
+                        secondary: Icon(_icon(option.type)),
+                        title: Text(option.label),
+                        subtitle: option.required
+                            ? const Text('Always on')
+                            : null,
+                        value: enabled[option.id]!,
+                        onChanged: option.required || _saving
+                            ? null
+                            : (v) {
+                                HapticFeedback.selectionClick();
+                                setState(() => enabled[option.id] = v);
+                              },
+                      ),
+                  ],
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label, style: Theme.of(context).textTheme.titleSmall),
-                  if (required)
-                    Text(
-                      'Required',
-                      style: Theme.of(context).textTheme.bodySmall
-                          ?.copyWith(color: cs.outline),
-                    ),
-                ],
-              ),
-            ),
-            Switch(
-              value: _checked,
-              onChanged: required
-                  ? null
-                  : (val) => setState(() => _checked = val),
-            ),
-          ],
+      bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.fromLTRB(Gap.lg, Gap.sm, Gap.lg, Gap.lg),
+        child: BusyButton(
+          label: _changed ? 'Save changes' : 'No changes',
+          icon: Icons.check_rounded,
+          busy: _saving,
+          onPressed: _changed ? _save : null,
         ),
       ),
     );

@@ -12,18 +12,20 @@ class SettingsGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(Radii.lg),
-      child: ColoredBox(
-        color: cs.surfaceContainerLow,
-        child: Column(
-          children: [
-            for (var i = 0; i < children.length; i++) ...[
-              if (i > 0) const Divider(indent: 72),
-              children[i],
-            ],
+    // Material (not a ColoredBox) so the rows' ink ripples show.
+    return Material(
+      color: cs.surfaceContainerLow,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(Radii.lg),
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0) const Divider(indent: 72),
+            children[i],
           ],
-        ),
+        ],
       ),
     );
   }
