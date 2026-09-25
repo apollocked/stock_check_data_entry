@@ -10,6 +10,7 @@ import '../screens/auth/splash_screen.dart';
 import '../screens/barcode_lookup_screen.dart';
 import '../screens/history/history_screen.dart';
 import '../screens/inventory/inventory_screen.dart';
+import '../screens/items/item_details_screen.dart';
 import '../screens/new_item_form_screen.dart';
 import '../screens/reports/reports_screen.dart';
 import '../screens/settings/item_fields_screen.dart';
@@ -72,6 +73,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.newItem,
         builder: (_, state) =>
             ItemFormScreen(barcode: state.uri.queryParameters['barcode'] ?? ''),
+      ),
+      GoRoute(
+        path: AppRoutes.item,
+        builder: (_, state) => ItemDetailsScreen(
+          itemId: int.tryParse(state.pathParameters['id'] ?? '') ?? -1,
+          initial: state.extra as Item?,
+        ),
       ),
       GoRoute(
         path: AppRoutes.editItem,

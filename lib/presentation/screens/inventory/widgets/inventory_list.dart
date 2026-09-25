@@ -4,12 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_tokens.dart';
 import '../../../controllers/inventory_controllers.dart';
 import '../../../controllers/inventory_query.dart';
+import '../../../router/app_routes.dart';
 import '../../../widgets/item_actions.dart';
 import '../../../widgets/motion/entrance.dart';
 import '../../../widgets/states/empty_state.dart';
 import '../../../widgets/states/error_state.dart';
 import '../../../widgets/states/skeleton.dart';
-import '../../stock_action_sheet.dart';
 import 'item_card.dart';
 
 /// The item list as slivers: skeletons while loading, then the filtered
@@ -70,7 +70,7 @@ class InventoryList extends ConsumerWidget {
                   return ItemCard(
                     key: ValueKey(item.id),
                     item: item,
-                    onTap: () => showStockActionSheet(context, item: item),
+                    onTap: () => context.openItem(item),
                     onLongPress: () => showItemActionsSheet(context, ref, item),
                   ).entrance(index: index);
                 },

@@ -10,7 +10,7 @@ import '../../domain/entities/item.dart';
 import '../providers/repository_providers.dart';
 import '../widgets/item_image.dart';
 import 'new_item_form_screen.dart';
-import 'stock_action_sheet.dart';
+import 'stock/stock_action_sheet.dart';
 
 class BarcodeLookupScreen extends ConsumerStatefulWidget {
   const BarcodeLookupScreen({super.key});
