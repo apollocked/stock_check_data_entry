@@ -47,12 +47,19 @@ class SkeletonList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
+    // Not a ListView: this also sits inside slivers and columns, where the
+    // height is unbounded. Extra rows are simply clipped.
+    return SingleChildScrollView(
       padding: padding,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: count,
-      separatorBuilder: (_, _) => const SizedBox(height: Gap.sm),
-      itemBuilder: (_, _) => SkeletonBox(height: itemHeight, radius: Radii.lg),
+      child: Column(
+        children: [
+          for (var i = 0; i < count; i++) ...[
+            if (i > 0) const SizedBox(height: Gap.sm),
+            SkeletonBox(height: itemHeight, radius: Radii.lg),
+          ],
+        ],
+      ),
     );
   }
 }

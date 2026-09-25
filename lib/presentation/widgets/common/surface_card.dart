@@ -30,23 +30,29 @@ class SurfaceCard extends StatelessWidget {
     final shape = BorderRadius.circular(radius);
     final content = Padding(padding: padding, child: child);
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: gradient == null ? (color ?? cs.surfaceContainerLow) : null,
-        gradient: gradient,
+    // A real Material (not a DecoratedBox), so list tiles and ink ripples
+    // inside the card paint correctly.
+    return Material(
+      color: gradient == null ? (color ?? cs.surfaceContainerLow) : null,
+      type: gradient == null ? MaterialType.canvas : MaterialType.transparency,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
         borderRadius: shape,
-        border: gradient == null
-            ? Border.all(color: cs.outlineVariant.withAlpha(90))
-            : null,
+        side: gradient == null
+            ? BorderSide(color: cs.outlineVariant.withAlpha(90))
+            : BorderSide.none,
       ),
-      child: onTap == null && onLongPress == null
-          ? content
-          : Pressable(
-              onTap: onTap,
-              onLongPress: onLongPress,
-              borderRadius: shape,
-              child: content,
-            ),
+      child: Ink(
+        decoration: gradient == null ? null : BoxDecoration(gradient: gradient),
+        child: onTap == null && onLongPress == null
+            ? content
+            : Pressable(
+                onTap: onTap,
+                onLongPress: onLongPress,
+                borderRadius: shape,
+                child: content,
+              ),
+      ),
     );
   }
 }
