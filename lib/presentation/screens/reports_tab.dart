@@ -269,12 +269,12 @@ class _HeroCard extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: kBrandGradient,
+          colors: AppColors.brandGradient,
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x3D4F46E5),
+            color: Color(0x3D5B4CFF),
             blurRadius: 20,
             offset: Offset(0, 8),
           ),

@@ -8,6 +8,7 @@ import 'core/config.dart';
 import 'core/security/secure_session_storage.dart';
 import 'core/theme/app_theme.dart';
 import 'presentation/controllers/auth_controllers.dart';
+import 'presentation/controllers/theme_controller.dart';
 import 'presentation/screens/access_gate.dart';
 import 'presentation/screens/login_screen.dart';
 import 'presentation/screens/reset_password_screen.dart';
@@ -48,7 +49,7 @@ class StocklyApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: lightTheme,
       darkTheme: darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: ref.watch(themeModeProvider),
       home: ref
           .watch(sessionStateProvider)
           .when(
