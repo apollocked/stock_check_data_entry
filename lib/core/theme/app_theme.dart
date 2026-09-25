@@ -54,7 +54,8 @@ ThemeData _buildTheme(Brightness brightness) {
       backgroundColor: scheme.surface,
       surfaceTintColor: Colors.transparent,
       foregroundColor: scheme.onSurface,
-      titleTextStyle: text.titleLarge,
+      // No titleTextStyle: large and medium app bars would use it for their
+      // expanded title too. The defaults come from the text theme above.
     ),
     cardTheme: CardThemeData(
       elevation: 0,

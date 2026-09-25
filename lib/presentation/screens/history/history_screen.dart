@@ -95,7 +95,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                 ),
                 if (list.isEmpty)
                   const SliverFillRemaining(
-                    hasScrollBody: false,
                     child: EmptyState(
                       icon: Icons.event_available_rounded,
                       title: 'A quiet day',

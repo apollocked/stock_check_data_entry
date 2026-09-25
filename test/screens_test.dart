@@ -16,6 +16,7 @@ Future<void> _pump(
   WidgetTester tester,
   Widget screen, {
   bool dark = false,
+  FakeInventoryRepository? repo,
 }) async {
   tester.platformDispatcher.accessibilityFeaturesTestValue =
       const FakeAccessibilityFeatures(disableAnimations: true);
@@ -24,7 +25,7 @@ Future<void> _pump(
     ProviderScope(
       overrides: [
         inventoryRepositoryProvider.overrideWithValue(
-          FakeInventoryRepository(),
+          repo ?? FakeInventoryRepository(),
         ),
       ],
       child: MaterialApp(
@@ -84,6 +85,17 @@ void main() {
       300,
       scrollable: find.byType(Scrollable).first,
     );
+    await tester.pump(const Duration(seconds: 2));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('history handles a day with no movements', (tester) async {
+    await _pump(
+      tester,
+      const HistoryScreen(),
+      repo: FakeInventoryRepository()..movements = [],
+    );
+    expect(find.text('A quiet day'), findsOneWidget);
     await tester.pump(const Duration(seconds: 2));
     expect(tester.takeException(), isNull);
   });

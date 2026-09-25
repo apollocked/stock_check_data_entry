@@ -45,7 +45,7 @@ class FakeInventoryRepository implements InventoryRepository {
     ),
   ];
 
-  late final movements = [
+  late List<StockMovement> movements = [
     StockMovement(
       id: 1,
       itemId: 1,
