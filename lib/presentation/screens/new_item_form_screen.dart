@@ -157,6 +157,7 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
         );
       }
 
+      invalidateStock(ref);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(_isEditMode ? 'Item updated' : 'Item saved')),
