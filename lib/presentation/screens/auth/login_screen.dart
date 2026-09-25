@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../../core/config.dart';
-import '../../../core/error/error_messages.dart';
 import '../../../core/security/password_policy.dart';
-import '../../widgets/brand/brand_logo.dart';
+import '../../../core/theme/app_tokens.dart';
+import '../../controllers/auth_actions.dart';
+import '../../widgets/common/busy_button.dart';
+import '../../widgets/feedback/app_feedback.dart';
+import 'widgets/auth_layout.dart';
+import 'widgets/password_field.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -16,224 +19,132 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-
+  final _email = TextEditingController();
+  final _password = TextEditingController();
   bool _isSignUp = false;
   bool _busy = false;
-  bool _obscure = true;
 
   @override
   void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
+    _email.dispose();
+    _password.dispose();
     super.dispose();
+  }
+
+  Future<void> _run(Future<void> Function() action) async {
+    setState(() => _busy = true);
+    try {
+      await action();
+    } catch (e) {
+      if (mounted) showErrorSnack(context, e);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _busy = true);
-    final auth = Supabase.instance.client.auth;
-    final email = _emailController.text.trim();
-    final password = _passwordController.text;
-
-    try {
-      if (_isSignUp) {
-        final response = await auth.signUp(
-          email: email,
-          password: password,
-          emailRedirectTo: Config.authRedirectUrl,
-        );
-        if (!mounted) return;
-        if (response.session == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Account created. Check your inbox to confirm the email, '
-                'then sign in.',
-              ),
-              duration: Duration(seconds: 8),
-            ),
-          );
-          setState(() => _isSignUp = false);
-        }
-      } else {
-        await auth.signInWithPassword(email: email, password: password);
-      }
-    } on AuthException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(friendlyError(e))));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(friendlyError(e))));
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
+    TextInput.finishAutofillContext();
+    final auth = ref.read(authActionsProvider);
+    await _run(() async {
+      if (!_isSignUp) return auth.signIn(_email.text, _password.text);
+      final needsConfirm = await auth.signUp(_email.text, _password.text);
+      if (!needsConfirm || !mounted) return;
+      showAppSnack(
+        context,
+        'Account created. Confirm your email from your inbox, then sign in.',
+        kind: SnackKind.success,
+      );
+      setState(() => _isSignUp = false);
+    });
   }
 
   Future<void> _forgotPassword() async {
-    final email = _emailController.text.trim();
-    if (!email.contains('@')) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Enter your email above, then tap "Forgot password?".'),
-        ),
-      );
+    if (validateEmail(_email.text) != null) {
+      showAppSnack(context, 'Enter your email above first.');
       return;
     }
-    setState(() => _busy = true);
-    try {
-      await Supabase.instance.client.auth.resetPasswordForEmail(
-        email,
-        redirectTo: Config.authRedirectUrl,
+    await _run(() async {
+      await ref.read(authActionsProvider).sendPasswordReset(_email.text);
+      if (!mounted) return;
+      // Same answer whether or not the account exists.
+      showAppSnack(
+        context,
+        'If an account exists for ${_email.text.trim()}, a reset link is on '
+        'its way. Open it on this phone.',
+        kind: SnackKind.success,
       );
-      if (mounted) {
-        // Same answer whether or not the account exists.
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'If an account exists for $email, a reset link is on its way. '
-              'Open it on this phone.',
-            ),
-            duration: const Duration(seconds: 8),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(friendlyError(e))));
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color.alphaBlend(cs.primary.withAlpha(28), cs.surface),
-              cs.surface,
-            ],
-          ),
-        ),
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Center(child: BrandLogo(size: 104)),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Stockly',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineMedium
-                          ?.copyWith(fontWeight: FontWeight.w800),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Store stock, inventory & sales in one app',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium
-                          ?.copyWith(color: cs.onSurfaceVariant),
-                    ),
-                    const SizedBox(height: 32),
-                    TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      autofillHints: const [AutofillHints.email],
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        prefixIcon: Icon(Icons.email_outlined),
-                      ),
-                      validator: (value) => value != null && value.contains('@')
-                          ? null
-                          : 'Enter a valid email',
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _passwordController,
-                      obscureText: _obscure,
-                      autofillHints: const [AutofillHints.password],
-                      onFieldSubmitted: (_) => _busy ? null : _submit(),
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        prefixIcon: const Icon(Icons.lock_outline),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscure
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
-                          ),
-                          onPressed: () => setState(() => _obscure = !_obscure),
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Enter your password';
-                        }
-                        // Existing accounts may have older, shorter passwords.
-                        if (_isSignUp) return validateNewPassword(value);
-                        return null;
-                      },
-                    ),
-                    if (!_isSignUp)
-                      Align(
+    return AuthLayout(
+      title: _isSignUp ? 'Create your account' : 'Welcome back',
+      subtitle: 'Stock, inventory and sales in one simple app',
+      child: AutofillGroup(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SegmentedButton<bool>(
+                showSelectedIcon: false,
+                segments: const [
+                  ButtonSegment(value: false, label: Text('Sign in')),
+                  ButtonSegment(value: true, label: Text('Create account')),
+                ],
+                selected: {_isSignUp},
+                onSelectionChanged: _busy
+                    ? null
+                    : (s) => setState(() => _isSignUp = s.first),
+              ),
+              const SizedBox(height: Gap.xl),
+              TextFormField(
+                controller: _email,
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                autofillHints: const [AutofillHints.email],
+                validator: validateEmail,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  prefixIcon: Icon(Icons.alternate_email_rounded),
+                ),
+              ),
+              const SizedBox(height: Gap.lg),
+              PasswordField(
+                controller: _password,
+                isNew: _isSignUp,
+                showStrength: _isSignUp,
+                onSubmitted: (_) => _busy ? null : _submit(),
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Enter your password';
+                  // Existing accounts may have older, shorter passwords.
+                  return _isSignUp ? validateNewPassword(v) : null;
+                },
+              ),
+              AnimatedSize(
+                duration: Motion.medium,
+                curve: Motion.emphasized,
+                child: _isSignUp
+                    ? const SizedBox(height: Gap.xl, width: double.infinity)
+                    : Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
                           onPressed: _busy ? null : _forgotPassword,
                           child: const Text('Forgot password?'),
                         ),
-                      )
-                    else
-                      const SizedBox(height: 16),
-                    const SizedBox(height: 8),
-                    FilledButton(
-                      onPressed: _busy ? null : _submit,
-                      child: _busy
-                          ? SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: cs.onPrimary,
-                              ),
-                            )
-                          : Text(_isSignUp ? 'Create account' : 'Sign in'),
-                    ),
-                    const SizedBox(height: 8),
-                    TextButton(
-                      onPressed: _busy
-                          ? null
-                          : () => setState(() => _isSignUp = !_isSignUp),
-                      child: Text(
-                        _isSignUp
-                            ? 'Already have an account? Sign in'
-                            : "First time? Create an account",
                       ),
-                    ),
-                  ],
-                ),
               ),
-            ),
+              BusyButton(
+                label: _isSignUp ? 'Create account' : 'Sign in',
+                icon: _isSignUp
+                    ? Icons.person_add_alt_1_rounded
+                    : Icons.arrow_forward_rounded,
+                busy: _busy,
+                onPressed: _submit,
+              ),
+            ],
           ),
         ),
       ),

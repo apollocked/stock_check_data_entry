@@ -1,32 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/error/error_messages.dart';
 import '../../../core/security/password_policy.dart';
-import '../../widgets/brand/brand_logo.dart';
+import '../../../core/theme/app_tokens.dart';
+import '../../controllers/auth_actions.dart';
+import '../../widgets/common/busy_button.dart';
+import '../../widgets/feedback/app_feedback.dart';
+import 'widgets/auth_layout.dart';
+import 'widgets/password_field.dart';
 
-/// Shown after the user opens a password-reset link from their email. Once the
-/// password is saved, Supabase emits `userUpdated` and the app moves on to the
-/// home screen by itself.
-class ResetPasswordScreen extends StatefulWidget {
+/// Shown after the user opens a password-reset link from their email. Once
+/// the password is saved, Supabase emits `userUpdated` and the router moves
+/// on to the app by itself.
+class ResetPasswordScreen extends ConsumerStatefulWidget {
   const ResetPasswordScreen({super.key});
 
   @override
-  State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
+  ConsumerState<ResetPasswordScreen> createState() =>
+      _ResetPasswordScreenState();
 }
 
-class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
+class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _passwordController = TextEditingController();
-  final _confirmController = TextEditingController();
-
+  final _password = TextEditingController();
+  final _confirm = TextEditingController();
   bool _busy = false;
-  bool _obscure = true;
 
   @override
   void dispose() {
-    _passwordController.dispose();
-    _confirmController.dispose();
+    _password.dispose();
+    _confirm.dispose();
     super.dispose();
   }
 
@@ -34,19 +37,16 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _busy = true);
     try {
-      await Supabase.instance.client.auth.updateUser(
-        UserAttributes(password: _passwordController.text),
-      );
+      await ref.read(authActionsProvider).updatePassword(_password.text);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Password updated. You are signed in.')),
+        showAppSnack(
+          context,
+          'Password updated. You are signed in.',
+          kind: SnackKind.success,
         );
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(friendlyError(e))));
-      }
+      if (mounted) showErrorSnack(context, e);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -54,113 +54,53 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
   Future<void> _cancel() async {
     try {
-      await Supabase.instance.client.auth.signOut();
+      await ref.read(authActionsProvider).signOut();
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(friendlyError(e))));
-      }
+      if (mounted) showErrorSnack(context, e);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color.alphaBlend(cs.primary.withAlpha(28), cs.surface),
-              cs.surface,
-            ],
-          ),
-        ),
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Center(child: BrandLogo(size: 88)),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Set a new password',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.w800),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Choose a password you have not used before.',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium
-                          ?.copyWith(color: cs.onSurfaceVariant),
-                    ),
-                    const SizedBox(height: 28),
-                    TextFormField(
-                      controller: _passwordController,
-                      obscureText: _obscure,
-                      autofillHints: const [AutofillHints.newPassword],
-                      decoration: InputDecoration(
-                        labelText: 'New password',
-                        prefixIcon: const Icon(Icons.lock_outline),
-                        suffixIcon: IconButton(
-                          tooltip: _obscure ? 'Show password' : 'Hide password',
-                          icon: Icon(
-                            _obscure
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
-                          ),
-                          onPressed: () => setState(() => _obscure = !_obscure),
-                        ),
-                      ),
-                      validator: validateNewPassword,
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _confirmController,
-                      obscureText: _obscure,
-                      autofillHints: const [AutofillHints.newPassword],
-                      onFieldSubmitted: (_) => _busy ? null : _save(),
-                      decoration: const InputDecoration(
-                        labelText: 'Confirm new password',
-                        prefixIcon: Icon(Icons.lock_outline),
-                      ),
-                      validator: (value) => value == _passwordController.text
-                          ? null
-                          : 'Passwords do not match',
-                    ),
-                    const SizedBox(height: 24),
-                    FilledButton(
-                      onPressed: _busy ? null : _save,
-                      child: _busy
-                          ? SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: cs.onPrimary,
-                              ),
-                            )
-                          : const Text('Save password'),
-                    ),
-                    const SizedBox(height: 8),
-                    TextButton(
-                      onPressed: _busy ? null : _cancel,
-                      child: const Text('Cancel'),
-                    ),
-                  ],
-                ),
+    return AuthLayout(
+      title: 'Set a new password',
+      subtitle: 'Choose a password you have not used before.',
+      child: AutofillGroup(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              PasswordField(
+                controller: _password,
+                label: 'New password',
+                isNew: true,
+                showStrength: true,
+                action: TextInputAction.next,
+                validator: validateNewPassword,
               ),
-            ),
+              const SizedBox(height: Gap.lg),
+              PasswordField(
+                controller: _confirm,
+                label: 'Confirm new password',
+                isNew: true,
+                onSubmitted: (_) => _busy ? null : _save(),
+                validator: (v) =>
+                    v == _password.text ? null : 'Passwords do not match',
+              ),
+              const SizedBox(height: Gap.xl),
+              BusyButton(
+                label: 'Save password',
+                icon: Icons.check_rounded,
+                busy: _busy,
+                onPressed: _save,
+              ),
+              const SizedBox(height: Gap.sm),
+              TextButton(
+                onPressed: _busy ? null : _cancel,
+                child: const Text('Cancel'),
+              ),
+            ],
           ),
         ),
       ),
