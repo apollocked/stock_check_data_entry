@@ -1,168 +1,102 @@
 # Stockly
 
-Stockly is a Flutter inventory and stock-management app for tracking items, monitoring stock movements (in / out / damage / adjustments), reviewing reports, and exporting data for accounting.
-
-## Overview
-
-This project is built for warehouse, retail, and stock-checking workflows where teams need to:
-
-- track inventory items and quantities (including zero and negative stock)
-- search and filter stock quickly by name or barcode
-- log stock movements such as inbound, outbound, damage, and corrections
-- capture item details, barcode references, and photos
-- browse daily history with a calendar and per-day summaries
-- review stock summaries, low-stock alerts, and category counts (in stock / zero / minus)
-- export inventory data to CSV and Excel for sharing and reporting
-
-The app uses Supabase for authentication and backend data storage, and Riverpod for state management.
+Stockly is a Flutter inventory and stock-management app: track items and quantities, record stock in / out / damage and shelf counts, review reports, and export data for accounting. Supabase handles sign-in and data; Riverpod handles state.
 
 ## Features
 
-- Email/password sign-in and account creation with Supabase Auth, including password reset
-- Inventory dashboard with search and refresh
-- Add, edit, and delete inventory items via barcode flow or manual entry
-- Per-store configurable item fields
-- Stock movement tracking (Stock in, Stock out, Damage) with signed quantities
-- Adjust-stock corrections that accept positive and negative values
-- Calendar history of stock movements with daily in/out/damage summaries
-- Reporting overview: totals, stock value, low-stock alerts, and in-stock / zero / minus counts
-- CSV export and multi-sheet Excel report export (Overview, Inventory, Movements)
-- Image support for product records
-- Branded Material 3 design with app icon
+- **Inventory**: search by name, barcode or description; filter chips for low, out-of-stock and negative items (with live counts); sort by newest, name, lowest stock or stock value.
+- **Barcode scanner**: live camera with a scan window and torch, or type a code. A scan opens the item, updates its stock, or adds it as a new item.
+- **Item screen**: photo, live stock and value, one-tap *In / Out / Damage / Count*, details, and the item's own movement history.
+- **Stock sheet**: stepper with hold-to-repeat, live "12 → 17" preview, and an optional note. *Count* mode is for stock checks: enter what is on the shelf and the difference is recorded.
+- **Reports**: stock value, 14-day in/out activity chart, stock health, all-time totals, items needing attention, recent movements.
+- **History**: pick any day from a day strip or calendar to see its totals and every movement.
+- **Settings**: light / dark / system theme, store name and location, which fields items record, team access, change password, sign out.
+- **Exports**: CSV inventory and a multi-sheet Excel report (Overview, Inventory, Movements).
+- Material 3 design with light and dark themes, animations, predictive back, and edge-to-edge layout; respects the system "reduce motion" setting.
 
-## Tech Stack
+## Tech stack
 
-- Flutter
-- Dart
-- Supabase Flutter SDK
-- Riverpod
-- Mobile Scanner
-- Image Picker
-- CSV export utilities
-- Excel export utilities
-- Share Plus
+Flutter · Dart · [supabase_flutter](https://pub.dev/packages/supabase_flutter) · [flutter_riverpod](https://pub.dev/packages/flutter_riverpod) · [go_router](https://pub.dev/packages/go_router) · [flutter_animate](https://pub.dev/packages/flutter_animate) · [fl_chart](https://pub.dev/packages/fl_chart) · [intl](https://pub.dev/packages/intl) · [flutter_secure_storage](https://pub.dev/packages/flutter_secure_storage) · [mobile_scanner](https://pub.dev/packages/mobile_scanner) · [image_picker](https://pub.dev/packages/image_picker) · csv · excel · share_plus
 
-## Project Structure
+## Project structure
 
 ```text
-.
-├── android/                     # Android project files
-├── ios/                         # iOS project files
-├── assets/
-│   └── branding/                # App logo
-├── lib/
-│   ├── core/                    # App configuration and theme
-│   ├── data/                    # Repositories and data sources
-│   ├── domain/                  # Domain entities and repository contracts
-│   ├── presentation/            # Screens, controllers, and providers
-│   ├── main.dart                # App entry point
-│   └── ...
-├── test/                        # Unit/widget tests
-├── analysis_options.yaml        # Lint configuration
-├── pubspec.yaml                 # Flutter package configuration
-├── README.md                    # Project documentation
-├── .gitignore                   # Git ignore rules
-├── .metadata                    # Flutter metadata
-└── ...                          # Platform-specific folders
+lib/
+├── core/              # config, errors, security helpers, theme tokens, formatters
+├── domain/            # entities (Item, StockMovement, StockChange, …) and repository contracts
+├── data/              # Supabase datasources, repository implementations, export services
+├── presentation/
+│   ├── controllers/   # Riverpod providers and notifiers
+│   ├── router/        # go_router routes and the sign-in / access redirect
+│   ├── screens/       # one folder per feature, each with its own widgets/
+│   └── widgets/       # shared components: cards, badges, states, motion, brand
+└── main.dart
+supabase/schema/       # database schema, run in order (01 … 05)
+tool/brand/            # renders the logo, launcher icons and splash images
+test/                  # unit and widget tests
 ```
 
-## Prerequisites
+Every Dart file is kept under 200 lines; larger screens are split into widgets in their feature folder.
 
-Before running the project, make sure you have:
-
-- Flutter SDK installed and configured
-- Android Studio or Xcode for emulation/simulation
-- VS Code or Android Studio for development
-- A Supabase project for authentication and data storage
-
-## Getting Started
-
-1. Clone the repository:
-
-```bash
-git clone https://github.com/apollocked/stock_check_data_entry.git
-cd stock_check_entry
-```
-
-2. Install dependencies:
+## Getting started
 
 ```bash
 flutter pub get
-```
-
-3. Add your Supabase credentials (see [Supabase Configuration](#supabase-configuration)):
-
-```bash
-cp env.example.json env.json
-```
-
-4. Run the app:
-
-```bash
+cp env.example.json env.json   # then fill in your Supabase URL and publishable key
 flutter run --dart-define-from-file=env.json
 ```
 
-The VS Code launch configurations in `.vscode/launch.json` already pass this flag.
+The Supabase URL and key are read at build time (`lib/core/config.dart`) and never stored in the source. Use the same flag for release builds. In VS Code, `.vscode/settings.json` adds it to every run, so the Run button and the launch configurations both work.
 
-## Supabase Configuration
+## Supabase setup
 
-Supabase is initialized in `lib/main.dart`. The project URL and key are not stored in the source: they are read at build time from `--dart-define` values in `lib/core/config.dart`.
+1. In the SQL editor, run the files in [`supabase/schema/`](supabase/schema/) **in order** (`01_tables.sql` to `05_storage.sql`). They are idempotent, so running them again upgrades an existing project.
+2. **Authentication → URL Configuration**: add `com.apollocked.stockly://login-callback/` to Redirect URLs (email confirmation and password reset open the app through it).
+3. **Authentication → Providers → Email**: set the minimum password length to 8 and require letters and digits, so the server matches the app.
 
-Copy `env.example.json` to `env.json` (git-ignored) and fill in your project's URL and publishable (anon) key. Use the same flag for release builds:
+### Access model
+
+Signing up is **not** enough to see a store. Only accounts in `public.members` can read or change data:
+
+- The first account created in a new project becomes a member automatically.
+- When upgrading an existing project, everyone who already had an account keeps access. Review `public.members` afterwards.
+- Members add and remove people in the app under **Settings → Team** (the person must create an account first). Accounts that are not members see a "Waiting for access" screen.
+
+## Security
+
+- **Database**: row level security limits every table to members. Stock quantities and the movement log can only change through the `record_stock_movement` function, so they cannot be edited or forged directly. Table grants are narrowed to the columns the app writes, and input sizes are limited.
+- **Storage**: members-only uploads, images only, 5 MB maximum, random file names, no overwrites.
+- **Device**: the session is stored in the Android Keystore / iOS Keychain, and Android backups of app data are disabled.
+- **App**: item images are only loaded from your Supabase project; CSV exports neutralize spreadsheet formulas; exports are written to temporary storage and deleted after sharing; raw errors are logged in debug builds only.
+
+## Branding
+
+The logo is drawn in code (`lib/presentation/widgets/brand/brand_mark_painter.dart`), so the in-app logo is vector and animated. To regenerate the PNGs after changing it:
 
 ```bash
-flutter build apk --release --dart-define-from-file=env.json
+flutter test tool/brand/generate_brand_assets_test.dart   # logo, adaptive icon layers, splash images
+dart run flutter_launcher_icons                            # launcher icons for Android, iOS, web, Windows, macOS
 ```
 
-If the values are missing, the app shows a setup message instead of crashing.
+## Tests
 
-For a clean setup, you should also configure:
+```bash
+flutter analyze
+flutter test
+```
 
-- Supabase Auth for sign-in/sign-up
-- the database: run [`supabase/schema.sql`](supabase/schema.sql) once in the Supabase SQL editor. It creates the tables, the `record_stock_movement` and `branch_stock_report` functions, the RLS policies, the `grocery_images` storage bucket, and the first store.
+The tests cover the domain rules (stock levels, count mode, daily activity, inventory filters), security helpers, the router's redirect rules, and widget tests that render the main screens with fake data in light and dark themes.
 
-The RLS policies give every signed-in user full access. Tighten them if the project is shared across teams.
+## Android release build
 
-### Email links (confirmation and password reset)
-
-Sign-up confirmation and "Forgot password?" emails open the app through a deep link, `com.apollocked.stockly://login-callback/` (`Config.authRedirectUrl`). For this to work:
-
-1. In the Supabase dashboard go to **Authentication → URL Configuration** and add `com.apollocked.stockly://login-callback/` to **Redirect URLs**.
-2. Keep the scheme in sync with `android/app/src/main/AndroidManifest.xml` and `ios/Runner/Info.plist` if you change it.
-3. Open the email on the phone that has the app installed.
-
-
-## Android Release Build
-
-- The application ID is `com.apollocked.stockly` (set in `android/app/build.gradle.kts`). Change it before your first Play Store upload if you want a different one; it cannot change afterwards.
-- Release builds are signed with your own keystore. Create one with `keytool`, copy `android/key.properties.example` to `android/key.properties` (git-ignored) and fill it in. Without that file, release builds fall back to the debug key and print a warning. Do not upload those.
-- Release builds have code shrinking and resource shrinking enabled (R8). Extra keep rules go in `android/app/proguard-rules.pro`.
+- The application ID is `com.apollocked.stockly` (`android/app/build.gradle.kts`). It cannot change after the first Play Store upload.
+- Copy `android/key.properties.example` to `android/key.properties` (git-ignored) and point it at your keystore. Without it, release builds fall back to the debug key and print a warning; never upload those.
+- Release builds use R8 code and resource shrinking.
 
 ```bash
 flutter build appbundle --release --dart-define-from-file=env.json
 ```
 
-## Local Development Notes
-
-- The app entry point is `lib/main.dart`.
-- State management is handled with Riverpod.
-- Business logic is separated into domain/data/presentation layers.
-- The app is designed around a single-store stock workflow and can be extended for multi-store or multi-user requirements.
-- The app name and launcher icon can be regenerated from `assets/branding/logo.png` using `flutter_launcher_icons`.
-
-## Typical Workflow
-
-1. Sign in or create an account
-2. Configure the store and custom item fields
-3. Add new items or scan barcodes to locate records
-4. Update stock with Stock in / Stock out / Damage, or fix counts with Adjust stock
-5. Review the calendar history and reporting overview
-6. Export inventory data to CSV or Excel when needed
-
 ## License
 
-This project does not currently declare a license. Add an appropriate license file if you plan to publish or distribute it publicly.
-
-## Contributing
-
-Contributions are welcome. If you improve the app, open a pull request with a clear summary of the changes and how they were validated.
+This project does not currently declare a license. Add one before publishing or distributing it.
