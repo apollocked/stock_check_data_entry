@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stockly/core/theme/app_theme.dart';
 import 'package:stockly/presentation/providers/repository_providers.dart';
+import 'package:stockly/presentation/screens/history/history_screen.dart';
 import 'package:stockly/presentation/screens/inventory/inventory_screen.dart';
 import 'package:stockly/presentation/screens/items/item_details_screen.dart';
 import 'package:stockly/presentation/screens/reports/reports_screen.dart';
@@ -72,6 +73,20 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('history shows the day summary and movements', (tester) async {
+    await _pump(tester, const HistoryScreen());
+    expect(find.text('Today'), findsOneWidget);
+    expect(find.text('Net'), findsOneWidget);
+    // The outer list; the day strip is a second, horizontal scrollable.
+    await tester.scrollUntilVisible(
+      find.text('Weekend sale'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump(const Duration(seconds: 2));
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('filter chips narrow the inventory', (tester) async {
     await _pump(tester, const InventoryScreen());

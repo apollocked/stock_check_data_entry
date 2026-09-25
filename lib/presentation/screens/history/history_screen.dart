@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import '../../../core/theme/app_theme.dart';
-import '../../../core/error/error_messages.dart';
-import '../../../domain/entities/stock_movement.dart';
+import '../../../core/theme/app_tokens.dart';
 import '../../controllers/inventory_controllers.dart';
+import '../../widgets/motion/entrance.dart';
 import '../../widgets/movement_tile.dart';
+import '../../widgets/states/empty_state.dart';
+import '../../widgets/states/error_state.dart';
+import '../../widgets/states/skeleton.dart';
+import 'widgets/day_strip.dart';
+import 'widgets/day_summary_card.dart';
 
+/// The History tab: pick a day, see its totals and every movement.
 class HistoryScreen extends ConsumerStatefulWidget {
   const HistoryScreen({super.key});
 
@@ -15,239 +21,110 @@ class HistoryScreen extends ConsumerStatefulWidget {
 }
 
 class _HistoryScreenState extends ConsumerState<HistoryScreen> {
-  late DateTime _selectedDay;
+  late DateTime _day = _today;
 
-  @override
-  void initState() {
-    super.initState();
-    _selectedDay = DateTime.now();
-  }
-
-  DateTime get _today {
+  static DateTime get _today {
     final now = DateTime.now();
     return DateTime(now.year, now.month, now.day);
   }
 
-  Future<void> _pickDay(DateTime day) async {
+  Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDay,
-      firstDate: DateTime.now().subtract(const Duration(days: 730)),
+      initialDate: _day,
+      firstDate: DateTime(_today.year - 2),
       lastDate: _today,
     );
-    if (picked != null && mounted) {
-      setState(() => _selectedDay = picked);
-    }
+    if (picked != null) setState(() => _day = picked);
   }
 
   @override
   Widget build(BuildContext context) {
-    final movementsAsync = ref.watch(
-      dayMovementsProvider((_selectedDay, null)),
-    );
+    final key = (_day, null);
+    final movements = ref.watch(dayMovementsProvider(key));
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('History'),
-        actions: [
-          TextButton.icon(
-            onPressed: () => setState(() => _selectedDay = _today),
-            icon: const Icon(Icons.today),
-            label: const Text('Today'),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Card(
-            elevation: 0,
-            margin: const EdgeInsets.all(12),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        tooltip: 'Previous day',
-                        onPressed: () {
-                          final prev = _selectedDay.subtract(
-                            const Duration(days: 1),
-                          );
-                          if (prev.isBefore(
-                            DateTime.now().subtract(const Duration(days: 730)),
-                          )) {
-                            return;
-                          }
-                          setState(() => _selectedDay = prev);
-                        },
-                        icon: const Icon(Icons.chevron_left),
-                      ),
-                      TextButton(
-                        onPressed: () => _pickDay(_selectedDay),
-                        child: Text(
-                          _formatFullDay(_selectedDay),
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      IconButton(
-                        tooltip: 'Next day',
-                        onPressed: _selectedDay.isBefore(_today)
-                            ? () => setState(
-                                () => _selectedDay = _selectedDay.add(
-                                  const Duration(days: 1),
-                                ),
-                              )
-                            : null,
-                        icon: const Icon(Icons.chevron_right),
-                      ),
-                    ],
-                  ),
-                  movementsAsync.maybeWhen(
-                    data: (movements) => _DaySummary(movements: movements),
-                    orElse: () => const SizedBox(height: 40),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Expanded(
-            child: movementsAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, _) => Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Could not load history:\n${friendlyError(error)}',
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 12),
-                    FilledButton.tonal(
-                      onPressed: () => ref.invalidate(dayMovementsProvider),
-                      child: const Text('Retry'),
-                    ),
-                  ],
+      body: RefreshIndicator(
+        edgeOffset: 120,
+        onRefresh: () async {
+          ref.invalidate(dayMovementsProvider(key));
+          await ref.read(dayMovementsProvider(key).future);
+        },
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverAppBar.large(
+              title: const Text('History'),
+              actions: [
+                IconButton(
+                  tooltip: 'Pick a date',
+                  onPressed: _pickDate,
+                  icon: const Icon(Icons.calendar_month_rounded),
                 ),
-              ),
-              data: (movements) => RefreshIndicator(
-                onRefresh: () async {
-                  ref.invalidate(dayMovementsProvider);
-                  await ref.read(
-                    dayMovementsProvider((_selectedDay, null)).future,
-                  );
-                },
-                child: movements.isEmpty
-                    ? ListView(
-                        children: const [
-                          SizedBox(height: 100),
-                          Icon(Icons.event_busy, size: 56),
-                          SizedBox(height: 12),
-                          Center(child: Text('No stock activity on this day.')),
-                        ],
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.all(12),
-                        itemCount: movements.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 4),
-                        itemBuilder: (context, index) => MovementTile(
-                          movement: movements[index],
-                          showDate: false,
-                        ),
-                      ),
+              ],
+            ),
+            SliverToBoxAdapter(
+              child: DayStrip(
+                selected: _day,
+                onSelect: (d) => setState(() => _day = d),
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatFullDay(DateTime day) {
-    const months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-    return '${months[day.month - 1]} ${day.day}, ${day.year}';
-  }
-}
-
-class _DaySummary extends StatelessWidget {
-  final List<StockMovement> movements;
-
-  const _DaySummary({required this.movements});
-
-  @override
-  Widget build(BuildContext context) {
-    if (movements.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    var inQty = 0;
-    var outQty = 0;
-    var damageQty = 0;
-    for (final m in movements) {
-      switch (m.type) {
-        case MovementType.inbound:
-          inQty += m.quantity;
-        case MovementType.outbound:
-          outQty += m.quantity;
-        case MovementType.damage:
-          damageQty += m.quantity;
-      }
-    }
-    final net = inQty - outQty - damageQty;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _Chip(label: 'In +$inQty', color: context.status.success),
-          const SizedBox(width: 8),
-          _Chip(label: 'Out -$outQty', color: context.status.info),
-          const SizedBox(width: 8),
-          _Chip(label: 'Damage -$damageQty', color: context.status.danger),
-          const SizedBox(width: 8),
-          _Chip(
-            label: 'Net ${net >= 0 ? '+' : ''}$net',
-            color: net < 0 ? context.status.danger : context.status.success,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Chip extends StatelessWidget {
-  final String label;
-  final Color color;
-
-  const _Chip({required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withAlpha(25),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelMedium
-            ?.copyWith(color: color, fontWeight: FontWeight.bold),
+            ...movements.when(
+              loading: () => const [
+                SliverToBoxAdapter(
+                  child: SkeletonList(count: 4, itemHeight: 72),
+                ),
+              ],
+              error: (error, _) => [
+                SliverFillRemaining(
+                  child: ErrorState(
+                    error: error,
+                    onRetry: () => ref.invalidate(dayMovementsProvider(key)),
+                  ),
+                ),
+              ],
+              data: (list) => [
+                SliverPadding(
+                  padding: const EdgeInsets.all(Gap.lg),
+                  sliver: SliverToBoxAdapter(
+                    child: DaySummaryCard(
+                      day: _day,
+                      movements: list,
+                    ).entrance(),
+                  ),
+                ),
+                if (list.isEmpty)
+                  const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: EmptyState(
+                      icon: Icons.event_available_rounded,
+                      title: 'A quiet day',
+                      message: 'No stock activity was recorded on this day.',
+                    ),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                      Gap.lg,
+                      0,
+                      Gap.lg,
+                      Gap.xxl,
+                    ),
+                    sliver: SliverList.separated(
+                      itemCount: list.length,
+                      separatorBuilder: (_, _) =>
+                          const SizedBox(height: Gap.sm),
+                      itemBuilder: (context, i) => MovementTile(
+                        movement: list[i],
+                        showDate: false,
+                        onTap: () => context.push('/items/${list[i].itemId}'),
+                      ).entrance(index: i),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
