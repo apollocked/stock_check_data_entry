@@ -15,6 +15,7 @@ import '../screens/reports/reports_screen.dart';
 import '../screens/scan/scan_screen.dart';
 import '../screens/settings/item_fields_screen.dart';
 import '../screens/settings/settings_screen.dart';
+import '../screens/settings/team_screen.dart';
 import '../screens/shell/home_shell.dart';
 import '../widgets/motion/fade_through_stack.dart';
 import 'app_gate.dart';
@@ -69,6 +70,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       tab(AppRoutes.scan, const ScanScreen()),
       tab(AppRoutes.itemFields, const ItemFieldsScreen()),
+      tab(AppRoutes.team, const TeamScreen()),
       GoRoute(
         path: AppRoutes.newItem,
         builder: (_, state) =>

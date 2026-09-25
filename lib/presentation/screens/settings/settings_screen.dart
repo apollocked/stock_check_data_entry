@@ -59,6 +59,12 @@ class SettingsScreen extends ConsumerWidget {
             subtitle: 'Choose what you record for each item',
             onTap: () => context.push(AppRoutes.itemFields),
           ),
+          SettingsTile(
+            icon: Icons.group_rounded,
+            title: 'Team',
+            subtitle: 'Who can use this store',
+            onTap: () => context.push(AppRoutes.team),
+          ),
         ],
       ),
       const SectionHeader('Account'),
