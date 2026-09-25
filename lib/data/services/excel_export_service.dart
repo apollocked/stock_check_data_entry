@@ -1,13 +1,12 @@
 import 'dart:io';
 
 import 'package:excel/excel.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../domain/entities/item.dart';
 import '../../domain/entities/stock_movement.dart';
 import '../../domain/entities/stock_report.dart';
 import '../../domain/entities/store.dart';
+import 'export_files.dart';
 
 class ExcelExportService {
   Future<File> buildWorkbook({
@@ -26,7 +25,7 @@ class ExcelExportService {
     ]);
     overview.appendRow([
       TextCellValue('Generated at'),
-      TextCellValue(_timestamp(DateTime.now())),
+      TextCellValue(exportTimestamp(DateTime.now())),
     ]);
     overview.appendRow([
       TextCellValue('Total items'),
@@ -142,26 +141,11 @@ class ExcelExportService {
     if (bytes == null) {
       throw StateError('Could not encode Excel workbook');
     }
-    final directory = await getApplicationDocumentsDirectory();
-    return File(
-      '${directory.path}${Platform.pathSeparator}'
-      'inventory_report_${_timestamp(DateTime.now())}.xlsx',
-    ).writeAsBytes(bytes);
+    final file = await exportFile('inventory_report', 'xlsx');
+    return file.writeAsBytes(bytes);
   }
 
-  Future<void> share(File file) async {
-    await SharePlus.instance.share(
-      ShareParams(files: [XFile(file.path)], text: 'Inventory report'),
-    );
-  }
-
-  String _timestamp(DateTime time) {
-    final y = time.year.toString().padLeft(4, '0');
-    final m = time.month.toString().padLeft(2, '0');
-    final d = time.day.toString().padLeft(2, '0');
-    final h = time.hour.toString().padLeft(2, '0');
-    final min = time.minute.toString().padLeft(2, '0');
-    final s = time.second.toString().padLeft(2, '0');
-    return '$y$m${d}_$h$min$s';
-  }
+  /// Opens the share sheet, then deletes the temporary file.
+  Future<void> share(File file) =>
+      shareAndDelete(file, text: 'Inventory report');
 }

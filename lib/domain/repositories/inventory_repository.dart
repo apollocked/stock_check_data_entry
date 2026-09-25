@@ -14,7 +14,7 @@ abstract interface class InventoryRepository {
   });
 
   // ---- Items ----
-  Future<String> uploadItemImage(XFile imageFile, {String? barcode});
+  Future<String> uploadItemImage(XFile imageFile);
 
   Future<Item> insertItem({
     required int storeId,

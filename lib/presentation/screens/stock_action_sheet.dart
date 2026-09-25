@@ -8,6 +8,7 @@ import '../../domain/entities/item.dart';
 import '../../domain/entities/stock_movement.dart';
 import '../controllers/inventory_controllers.dart';
 import '../providers/repository_providers.dart';
+import '../widgets/item_image.dart';
 
 Future<void> showStockActionSheet(BuildContext context, {required Item item}) {
   return showModalBottomSheet<void>(
@@ -138,31 +139,7 @@ class _StockActionSheetState extends ConsumerState<StockActionSheet> {
           children: [
             Row(
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: _item.imageUrl != null
-                      ? Image.network(
-                          _item.imageUrl!,
-                          width: 48,
-                          height: 48,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => Container(
-                            width: 48,
-                            height: 48,
-                            color: cs.surfaceContainerHighest,
-                            child: Icon(Icons.broken_image, color: cs.outline),
-                          ),
-                        )
-                      : Container(
-                          width: 48,
-                          height: 48,
-                          color: cs.surfaceContainerHighest,
-                          child: Icon(
-                            Icons.inventory_2_outlined,
-                            color: cs.outline,
-                          ),
-                        ),
-                ),
+                ItemImage(url: _item.imageUrl, size: 48, radius: 8),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(

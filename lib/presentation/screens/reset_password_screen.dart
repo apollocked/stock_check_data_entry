@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/error/error_messages.dart';
+import '../../core/security/password_policy.dart';
 import '../widgets/brand_logo.dart';
 
 /// Shown after the user opens a password-reset link from their email. Once the
@@ -121,9 +122,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           onPressed: () => setState(() => _obscure = !_obscure),
                         ),
                       ),
-                      validator: (value) => value != null && value.length >= 6
-                          ? null
-                          : 'At least 6 characters',
+                      validator: validateNewPassword,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(

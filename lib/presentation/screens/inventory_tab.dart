@@ -6,6 +6,7 @@ import '../../core/theme/app_theme.dart';
 import '../../domain/entities/item.dart';
 import '../controllers/inventory_controllers.dart';
 import '../providers/repository_providers.dart';
+import '../widgets/item_image.dart';
 import 'new_item_form_screen.dart';
 import 'stock_action_sheet.dart';
 
@@ -212,18 +213,7 @@ class _ItemCard extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: item.imageUrl != null
-                    ? Image.network(
-                        item.imageUrl!,
-                        width: 60,
-                        height: 60,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => _ImagePlaceholder(),
-                      )
-                    : const _ImagePlaceholder(),
-              ),
+              ItemImage(url: item.imageUrl, size: 60, radius: 14),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -309,32 +299,6 @@ class _ItemCard extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _ImagePlaceholder extends StatelessWidget {
-  const _ImagePlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 60,
-      height: 60,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Theme.of(context).colorScheme.primaryContainer,
-            Theme.of(context).colorScheme.secondaryContainer,
-          ],
-        ),
-      ),
-      child: Icon(
-        Icons.inventory_2_outlined,
-        color: Theme.of(context).colorScheme.primary,
       ),
     );
   }

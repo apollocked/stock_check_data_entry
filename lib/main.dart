@@ -1,12 +1,14 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/config.dart';
+import 'core/security/secure_session_storage.dart';
 import 'core/theme/app_theme.dart';
 import 'presentation/controllers/auth_controllers.dart';
-import 'presentation/screens/home_screen.dart';
+import 'presentation/screens/access_gate.dart';
 import 'presentation/screens/login_screen.dart';
 import 'presentation/screens/reset_password_screen.dart';
 import 'presentation/widgets/brand_logo.dart';
@@ -21,6 +23,17 @@ Future<void> main() async {
   await Supabase.initialize(
     url: Config.supabaseUrl,
     publishableKey: Config.supabaseAnonKey,
+    // On the web the browser has no keystore; supabase_flutter's default is
+    // used there.
+    authOptions: kIsWeb
+        ? const FlutterAuthClientOptions()
+        : FlutterAuthClientOptions(
+            localStorage: SecureSessionStorage(
+              persistSessionKey: SecureSessionStorage.keyFor(
+                Config.supabaseUrl,
+              ),
+            ),
+          ),
   );
   runApp(const ProviderScope(child: StocklyApp()));
 }
@@ -41,7 +54,7 @@ class StocklyApp extends ConsumerWidget {
           .when(
             loading: () => const _Splash(),
             data: (status) => switch (status) {
-              AuthStatus.signedIn => const HomeScreen(),
+              AuthStatus.signedIn => const AccessGate(),
               AuthStatus.passwordRecovery => const ResetPasswordScreen(),
               AuthStatus.signedOut => const LoginScreen(),
             },

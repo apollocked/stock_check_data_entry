@@ -12,12 +12,12 @@ const _generic = 'Something went wrong. Please try again.';
 
 /// Turns any error into short text that is safe to show to a user.
 ///
-/// The original error is printed in debug builds only, so raw Supabase and
-/// Postgres messages never reach the screen.
+/// The original error is printed in debug builds only (release builds log
+/// nothing), and raw Supabase and Postgres messages never reach the screen.
 String friendlyError(Object error, {String? fallback}) {
   if (error is AppException) return error.message;
 
-  debugPrint('Error: $error');
+  if (kDebugMode) debugPrint('Error: $error');
 
   if (_isConnectionProblem(error)) return _noConnection;
   if (error is TimeoutException) {
@@ -63,7 +63,8 @@ String _authMessage(AuthException e) {
     return 'An account with this email already exists. Try signing in.';
   }
   if (code == 'weak_password' || message.contains('password should')) {
-    return 'That password is too weak. Use at least 6 characters.';
+    return 'That password is too weak. Use at least 8 characters with '
+        'letters and numbers.';
   }
   if (code == 'over_email_send_rate_limit' ||
       code == 'over_request_rate_limit' ||
@@ -81,7 +82,7 @@ String _authMessage(AuthException e) {
 
 String _databaseMessage(PostgrestException e, String? fallback) {
   switch (e.code) {
-    // Raised by our own functions (see supabase/schema.sql); written for users.
+    // Raised by our own functions (see supabase/schema/); written for users.
     case 'P0001':
       return e.message;
     case '42501':

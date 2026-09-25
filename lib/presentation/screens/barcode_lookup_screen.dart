@@ -8,6 +8,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../core/error/error_messages.dart';
 import '../../domain/entities/item.dart';
 import '../providers/repository_providers.dart';
+import '../widgets/item_image.dart';
 import 'new_item_form_screen.dart';
 import 'stock_action_sheet.dart';
 
@@ -251,31 +252,7 @@ class _FoundItemCardState extends State<_FoundItemCard> {
             const SizedBox(height: 12),
             Row(
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: item.imageUrl != null
-                      ? Image.network(
-                          item.imageUrl!,
-                          width: 72,
-                          height: 72,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => Container(
-                            width: 72,
-                            height: 72,
-                            color: cs.surfaceContainerHighest,
-                            child: Icon(Icons.broken_image, color: cs.outline),
-                          ),
-                        )
-                      : Container(
-                          width: 72,
-                          height: 72,
-                          color: cs.surfaceContainerHighest,
-                          child: Icon(
-                            Icons.image_not_supported,
-                            color: cs.outline,
-                          ),
-                        ),
-                ),
+                ItemImage(url: item.imageUrl, size: 72, radius: 8),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(

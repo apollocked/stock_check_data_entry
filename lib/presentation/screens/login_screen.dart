@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config.dart';
 import '../../core/error/error_messages.dart';
+import '../../core/security/password_policy.dart';
 import '../widgets/brand_logo.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -185,9 +186,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           onPressed: () => setState(() => _obscure = !_obscure),
                         ),
                       ),
-                      validator: (value) => value != null && value.length >= 6
-                          ? null
-                          : 'At least 6 characters',
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Enter your password';
+                        }
+                        // Existing accounts may have older, shorter passwords.
+                        if (_isSignUp) return validateNewPassword(value);
+                        return null;
+                      },
                     ),
                     if (!_isSignUp)
                       Align(

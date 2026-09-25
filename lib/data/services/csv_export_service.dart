@@ -1,11 +1,11 @@
 import 'dart:io';
 
 import 'package:csv/csv.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 
+import '../../core/security/spreadsheet_safety.dart';
 import '../../domain/entities/item.dart';
 import '../../domain/entities/store.dart';
+import 'export_files.dart';
 
 class CsvExportService {
   static const _standardHeaders = [
@@ -19,10 +19,9 @@ class CsvExportService {
     'created_at',
   ];
 
-  Future<File> buildCsvFile(
-    List<Item> items,
-    List<ItemField> storeFields,
-  ) async {
+  /// Builds the CSV text. User-typed values are neutralized so the file
+  /// cannot run formulas when opened in a spreadsheet app.
+  String buildCsv(List<Item> items, List<ItemField> storeFields) {
     final enabledCustom = storeFields
         .where((f) => f.enabled && !kStandardFieldIds.contains(f.id))
         .toList();
@@ -34,37 +33,29 @@ class CsvExportService {
       for (final item in items)
         [
           item.id,
-          item.name,
-          item.description ?? '',
+          neutralizeFormula(item.name),
+          neutralizeFormula(item.description ?? ''),
           item.price?.toStringAsFixed(2) ?? '',
-          item.barcode ?? '',
+          neutralizeFormula(item.barcode ?? ''),
           item.imageUrl ?? '',
           item.quantity,
           item.createdAt.toIso8601String(),
           for (final f in enabledCustom)
-            item.customValue(f.id)?.toString() ?? '',
+            neutralizeFormula(item.customValue(f.id)?.toString() ?? ''),
         ],
     ];
-    final csvContent = const ListToCsvConverter().convert(rows);
-    final directory = await getApplicationDocumentsDirectory();
-    return File(
-      '${directory.path}${Platform.pathSeparator}inventory_${_timestamp(DateTime.now())}.csv',
-    ).writeAsString(csvContent);
+    return const ListToCsvConverter().convert(rows);
   }
 
-  Future<void> share(File file) async {
-    await SharePlus.instance.share(
-      ShareParams(files: [XFile(file.path)], text: 'Inventory export'),
-    );
+  Future<File> buildCsvFile(
+    List<Item> items,
+    List<ItemField> storeFields,
+  ) async {
+    final file = await exportFile('inventory', 'csv');
+    return file.writeAsString(buildCsv(items, storeFields));
   }
 
-  String _timestamp(DateTime time) {
-    final y = time.year.toString().padLeft(4, '0');
-    final m = time.month.toString().padLeft(2, '0');
-    final d = time.day.toString().padLeft(2, '0');
-    final h = time.hour.toString().padLeft(2, '0');
-    final min = time.minute.toString().padLeft(2, '0');
-    final s = time.second.toString().padLeft(2, '0');
-    return '$y$m${d}_$h$min$s';
-  }
+  /// Opens the share sheet, then deletes the temporary file.
+  Future<void> share(File file) =>
+      shareAndDelete(file, text: 'Inventory export');
 }

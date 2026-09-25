@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class InventoryRemoteDatasource {
@@ -43,17 +41,16 @@ class InventoryRemoteDatasource {
     String? imageUrl,
     Map<String, dynamic>? customFields,
   }) {
-    final row = {
+    final row = <String, dynamic>{
       'branch_id': storeId,
       'name': name,
       'price': price,
       'description': description,
       'barcode': barcode,
       'image_url': imageUrl,
+      if (customFields != null && customFields.isNotEmpty)
+        'custom_fields': customFields,
     };
-    if (customFields != null && customFields.isNotEmpty) {
-      row['custom_fields'] = jsonEncode(customFields);
-    }
     return _client.from('items').insert(row).select(_itemColumns).single();
   }
 
@@ -74,10 +71,6 @@ class InventoryRemoteDatasource {
     required int itemId,
     required Map<String, dynamic> updates,
   }) {
-    if (updates.containsKey('custom_fields') &&
-        updates['custom_fields'] is Map) {
-      updates['custom_fields'] = jsonEncode(updates['custom_fields']);
-    }
     return _client
         .from('items')
         .update(updates)

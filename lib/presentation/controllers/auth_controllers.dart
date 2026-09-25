@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../domain/entities/member.dart';
+import '../providers/repository_providers.dart';
+
 enum AuthStatus { signedOut, signedIn, passwordRecovery }
 
 /// Works out what the app should show after an auth event.
@@ -46,3 +49,12 @@ final sessionStateProvider = StreamProvider<AuthStatus>((ref) {
     return Stream.value(AuthStatus.signedOut);
   }
 });
+
+/// Whether the signed-in account is on the store's member list.
+final accessProvider = FutureProvider.autoDispose<bool>(
+  (ref) => ref.watch(accessRepositoryProvider).hasAccess(),
+);
+
+final membersProvider = FutureProvider.autoDispose<List<Member>>(
+  (ref) => ref.watch(accessRepositoryProvider).fetchMembers(),
+);

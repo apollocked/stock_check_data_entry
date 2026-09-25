@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../core/error/error_messages.dart';
 import '../../core/error/app_exception.dart';
+import '../../core/security/trusted_url.dart';
 import '../../domain/entities/item.dart';
 import '../../domain/entities/store.dart';
 import '../controllers/inventory_controllers.dart';
@@ -125,10 +126,7 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
       String? imageUrl = _existingImageUrl;
       if (_pickedImage != null) {
         _showSnackBar('Uploading image...');
-        imageUrl = await repo.uploadItemImage(
-          _pickedImage!,
-          barcode: widget.barcode,
-        );
+        imageUrl = await repo.uploadItemImage(_pickedImage!);
       }
 
       final custom = _collectCustomFields();
@@ -357,7 +355,7 @@ class _ImagePickerCard extends StatelessWidget {
                     width: double.infinity,
                     height: 180,
                   )
-                : existingImageUrl != null
+                : isTrustedImageUrl(existingImageUrl)
                 ? Image.network(
                     existingImageUrl!,
                     fit: BoxFit.cover,
