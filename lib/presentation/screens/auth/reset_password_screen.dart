@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../core/error/error_messages.dart';
-import '../../core/security/password_policy.dart';
-import '../widgets/brand/brand_logo.dart';
+import '../../../core/error/error_messages.dart';
+import '../../../core/security/password_policy.dart';
+import '../../widgets/brand/brand_logo.dart';
 
 /// Shown after the user opens a password-reset link from their email. Once the
 /// password is saved, Supabase emits `userUpdated` and the app moves on to the

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/error/error_messages.dart';
-import '../../domain/entities/store.dart';
-import '../controllers/inventory_controllers.dart';
+import '../../../core/error/error_messages.dart';
+import '../../../domain/entities/store.dart';
+import '../../controllers/inventory_controllers.dart';
 
 class ItemFieldsScreen extends ConsumerStatefulWidget {
   const ItemFieldsScreen({super.key});

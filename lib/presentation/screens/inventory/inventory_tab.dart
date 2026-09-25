@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/error/error_messages.dart';
-import '../../core/theme/app_theme.dart';
-import '../../domain/entities/item.dart';
-import '../controllers/inventory_controllers.dart';
-import '../providers/repository_providers.dart';
-import '../widgets/item_image.dart';
-import 'new_item_form_screen.dart';
-import 'stock_action_sheet.dart';
+import '../../../core/error/error_messages.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../domain/entities/item.dart';
+import '../../controllers/inventory_controllers.dart';
+import '../../providers/repository_providers.dart';
+import '../../widgets/item_image.dart';
+import '../new_item_form_screen.dart';
+import '../stock_action_sheet.dart';
 
 class InventoryTab extends ConsumerStatefulWidget {
   const InventoryTab({super.key});

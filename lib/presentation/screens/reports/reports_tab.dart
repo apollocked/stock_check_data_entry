@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/error/error_messages.dart';
-import '../../core/theme/app_theme.dart';
-import '../../domain/entities/stock_movement.dart';
-import '../controllers/inventory_controllers.dart';
-import '../widgets/movement_tile.dart';
+import '../../../core/error/error_messages.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../domain/entities/stock_movement.dart';
+import '../../controllers/inventory_controllers.dart';
+import '../../widgets/movement_tile.dart';
 
 class ReportsTab extends ConsumerStatefulWidget {
   const ReportsTab({super.key});

@@ -8,10 +8,14 @@ import '../../domain/entities/stock_movement.dart';
 import '../../domain/entities/stock_report.dart';
 import '../../domain/entities/store.dart';
 import '../providers/repository_providers.dart';
+import 'auth_controllers.dart';
 
 class StoreController extends AsyncNotifier<Store> {
   @override
   Future<Store> build() {
+    // Reload after sign-in / sign-out so another account never sees a
+    // previous session's store.
+    ref.watch(sessionStateProvider.select((s) => s.value));
     return ref.watch(inventoryRepositoryProvider).fetchStore();
   }
 

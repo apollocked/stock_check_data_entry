@@ -10,6 +10,8 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: StocklyApp()));
     await tester.pump();
     await tester.pumpAndSettle();
+    // Let delayed entrance animations finish.
+    await tester.pump(const Duration(seconds: 2));
 
     expect(find.text('Stockly'), findsOneWidget);
     expect(find.text('Sign in'), findsOneWidget);

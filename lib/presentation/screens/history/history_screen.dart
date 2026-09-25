@@ -1,21 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/theme/app_theme.dart';
-import '../../core/error/error_messages.dart';
-import '../../domain/entities/stock_movement.dart';
-import '../controllers/inventory_controllers.dart';
-import '../widgets/movement_tile.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/error/error_messages.dart';
+import '../../../domain/entities/stock_movement.dart';
+import '../../controllers/inventory_controllers.dart';
+import '../../widgets/movement_tile.dart';
 
-class CalendarHistoryScreen extends ConsumerStatefulWidget {
-  const CalendarHistoryScreen({super.key});
+class HistoryScreen extends ConsumerStatefulWidget {
+  const HistoryScreen({super.key});
 
   @override
-  ConsumerState<CalendarHistoryScreen> createState() =>
-      _CalendarHistoryScreenState();
+  ConsumerState<HistoryScreen> createState() => _HistoryScreenState();
 }
 
-class _CalendarHistoryScreenState extends ConsumerState<CalendarHistoryScreen> {
+class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   late DateTime _selectedDay;
 
   @override
