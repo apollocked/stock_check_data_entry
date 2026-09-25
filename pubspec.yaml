@@ -33,16 +33,23 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.4
 
 flutter_launcher_icons:
-  android: true
-  ios: true
   image_path: "assets/branding/logo.png"
-  remove_alpha_ios: true
-  adaptive_icon_background: "#5B3BDB"
+  android: "ic_launcher"
+  adaptive_icon_background: "assets/branding/logo_background.png"
   adaptive_icon_foreground: "assets/branding/logo_foreground.png"
-  adaptive_icon_monochrome: "assets/branding/logo_foreground.png"
+  adaptive_icon_monochrome: "assets/branding/logo_monochrome.png"
+  ios: true
+  remove_alpha_ios: true
+  web:
+    generate: true
+    background_color: "#100E1A"
+    theme_color: "#5B4CFF"
+  windows:
+    generate: true
+    icon_size: 48
+  macos:
+    generate: true
 
 flutter:
   uses-material-design: true
 
-  assets:
-    - assets/branding/

@@ -5,7 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/config.dart';
 import '../../core/error/error_messages.dart';
 import '../../core/security/password_policy.dart';
-import '../widgets/brand_logo.dart';
+import '../widgets/brand/brand_logo.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});

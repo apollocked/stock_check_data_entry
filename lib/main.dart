@@ -11,7 +11,7 @@ import 'presentation/controllers/auth_controllers.dart';
 import 'presentation/screens/access_gate.dart';
 import 'presentation/screens/login_screen.dart';
 import 'presentation/screens/reset_password_screen.dart';
-import 'presentation/widgets/brand_logo.dart';
+import 'presentation/widgets/brand/brand_logo.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
