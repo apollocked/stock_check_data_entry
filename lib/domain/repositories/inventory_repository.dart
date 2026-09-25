@@ -35,6 +35,7 @@ abstract interface class InventoryRepository {
     required String name,
     required double price,
     String? description,
+    String? barcode,
     String? imageUrl,
     Map<String, dynamic>? customFields,
   });

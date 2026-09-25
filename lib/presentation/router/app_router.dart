@@ -7,12 +7,12 @@ import '../screens/auth/login_screen.dart';
 import '../screens/auth/no_access_screen.dart';
 import '../screens/auth/reset_password_screen.dart';
 import '../screens/auth/splash_screen.dart';
-import '../screens/barcode_lookup_screen.dart';
 import '../screens/history/history_screen.dart';
 import '../screens/inventory/inventory_screen.dart';
 import '../screens/items/item_details_screen.dart';
-import '../screens/new_item_form_screen.dart';
+import '../screens/items/item_form_screen.dart';
 import '../screens/reports/reports_screen.dart';
+import '../screens/scan/scan_screen.dart';
 import '../screens/settings/item_fields_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/shell/home_shell.dart';
@@ -67,7 +67,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
-      tab(AppRoutes.scan, const BarcodeLookupScreen()),
+      tab(AppRoutes.scan, const ScanScreen()),
       tab(AppRoutes.itemFields, const ItemFieldsScreen()),
       GoRoute(
         path: AppRoutes.newItem,

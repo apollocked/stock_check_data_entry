@@ -116,6 +116,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
     required String name,
     required double price,
     String? description,
+    String? barcode,
     String? imageUrl,
     Map<String, dynamic>? customFields,
   }) => _guard(
@@ -126,6 +127,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
           'name': name,
           'price': price,
           'description': description,
+          'barcode': barcode,
           'image_url': imageUrl,
           'custom_fields': customFields ?? {},
         },
