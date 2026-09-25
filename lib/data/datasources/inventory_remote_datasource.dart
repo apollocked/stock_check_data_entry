@@ -63,6 +63,14 @@ class InventoryRemoteDatasource {
     return (data as List).cast<Map<String, dynamic>>();
   }
 
+  Future<Map<String, dynamic>?> fetchItem(int itemId) {
+    return _client
+        .from('items')
+        .select(_itemColumns)
+        .eq('id', itemId)
+        .maybeSingle();
+  }
+
   Future<void> deleteItem(int itemId) async {
     await _client.from('items').delete().eq('id', itemId);
   }
@@ -112,10 +120,19 @@ class InventoryRemoteDatasource {
   Future<List<Map<String, dynamic>>> fetchMovements({
     String? type,
     DateTime? day,
+    int? itemId,
+    DateTime? since,
+    int limit = 500,
   }) async {
     var query = _client.from('stock_movements').select('*, items(name)');
     if (type != null) {
       query = query.eq('movement_type', type);
+    }
+    if (itemId != null) {
+      query = query.eq('item_id', itemId);
+    }
+    if (since != null) {
+      query = query.gte('created_at', since.toUtc().toIso8601String());
     }
     if (day != null) {
       final dayStart = DateTime(day.year, day.month, day.day).toUtc();
@@ -124,7 +141,7 @@ class InventoryRemoteDatasource {
           .gte('created_at', dayStart.toIso8601String())
           .lt('created_at', dayEnd.toIso8601String());
     }
-    final data = await query.order('created_at', ascending: false).limit(500);
+    final data = await query.order('created_at', ascending: false).limit(limit);
     return (data as List).cast<Map<String, dynamic>>();
   }
 

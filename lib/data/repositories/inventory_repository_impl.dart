@@ -16,41 +16,46 @@ class InventoryRepositoryImpl implements InventoryRepository {
 
   const InventoryRepositoryImpl(this._remote, this._storage);
 
-  @override
-  Future<Store> fetchStore() async {
+  /// Runs [body] and turns any failure into an [AppException] with a
+  /// user-friendly message.
+  Future<T> _guard<T>(
+    Future<T> Function() body,
+    String fallback, [
+    AppExceptionType type = AppExceptionType.database,
+  ]) async {
     try {
-      final row = await _remote.fetchStore();
-      return Store.fromMap(row);
+      return await body();
     } catch (e) {
-      throw toAppException(
-        e,
-        'Could not load store.',
-        AppExceptionType.network,
-      );
+      throw toAppException(e, fallback, type);
     }
   }
+
+  static const _read = AppExceptionType.network;
+
+  @override
+  Future<Store> fetchStore() => _guard(
+    () async => Store.fromMap(await _remote.fetchStore()),
+    'Could not load store.',
+    _read,
+  );
 
   @override
   Future<Store> updateStore({
     required int storeId,
     required Map<String, dynamic> updates,
-  }) async {
-    try {
-      final row = await _remote.updateStore(storeId: storeId, updates: updates);
-      return Store.fromMap(row);
-    } catch (e) {
-      throw toAppException(e, 'Could not update store.');
-    }
-  }
+  }) => _guard(
+    () async => Store.fromMap(
+      await _remote.updateStore(storeId: storeId, updates: updates),
+    ),
+    'Could not update store.',
+  );
 
   @override
-  Future<String> uploadItemImage(XFile imageFile) async {
-    try {
-      return await _storage.upload(imageFile);
-    } catch (e) {
-      throw toAppException(e, 'Image upload failed.', AppExceptionType.storage);
-    }
-  }
+  Future<String> uploadItemImage(XFile imageFile) => _guard(
+    () => _storage.upload(imageFile),
+    'Image upload failed.',
+    AppExceptionType.storage,
+  );
 
   @override
   Future<Item> insertItem({
@@ -61,9 +66,9 @@ class InventoryRepositoryImpl implements InventoryRepository {
     String? barcode,
     String? imageUrl,
     Map<String, dynamic>? customFields,
-  }) async {
-    try {
-      final row = await _remote.insertItem(
+  }) => _guard(
+    () async => Item.fromMap(
+      await _remote.insertItem(
         storeId: storeId,
         name: name,
         price: price,
@@ -71,40 +76,39 @@ class InventoryRepositoryImpl implements InventoryRepository {
         barcode: barcode,
         imageUrl: imageUrl,
         customFields: customFields,
-      );
-      return Item.fromMap(row);
-    } catch (e) {
-      throw toAppException(e, 'Could not save item.');
-    }
-  }
+      ),
+    ),
+    'Could not save item.',
+  );
 
   @override
-  Future<List<Item>> fetchItems() async {
-    try {
-      final rows = await _remote.fetchItems();
-      return [for (final row in rows) Item.fromMap(row)];
-    } catch (e) {
-      throw toAppException(
-        e,
-        'Could not load items.',
-        AppExceptionType.network,
-      );
-    }
-  }
+  Future<List<Item>> fetchItems() => _guard(
+    () async => [
+      for (final row in await _remote.fetchItems()) Item.fromMap(row),
+    ],
+    'Could not load items.',
+    _read,
+  );
 
   @override
-  Future<Item?> searchByBarcode(String barcode) async {
-    try {
+  Future<Item?> fetchItem(int itemId) => _guard(
+    () async {
+      final row = await _remote.fetchItem(itemId);
+      return row == null ? null : Item.fromMap(row);
+    },
+    'Could not load the item.',
+    _read,
+  );
+
+  @override
+  Future<Item?> searchByBarcode(String barcode) => _guard(
+    () async {
       final row = await _remote.searchByBarcode(barcode);
       return row == null ? null : Item.fromMap(row);
-    } catch (e) {
-      throw toAppException(
-        e,
-        'Barcode lookup failed.',
-        AppExceptionType.network,
-      );
-    }
-  }
+    },
+    'Barcode lookup failed.',
+    _read,
+  );
 
   @override
   Future<Item> updateItem({
@@ -114,9 +118,9 @@ class InventoryRepositoryImpl implements InventoryRepository {
     String? description,
     String? imageUrl,
     Map<String, dynamic>? customFields,
-  }) async {
-    try {
-      final row = await _remote.updateItem(
+  }) => _guard(
+    () async => Item.fromMap(
+      await _remote.updateItem(
         itemId: itemId,
         updates: {
           'name': name,
@@ -125,22 +129,16 @@ class InventoryRepositoryImpl implements InventoryRepository {
           'image_url': imageUrl,
           'custom_fields': customFields ?? {},
         },
-      );
-      return Item.fromMap(row);
-    } catch (e) {
-      throw toAppException(e, 'Could not update item.');
-    }
-  }
+      ),
+    ),
+    'Could not update item.',
+  );
 
   @override
-  Future<void> deleteItem(Item item) async {
-    try {
-      await _remote.deleteItem(item.id);
-      await _storage.remove(item.imageUrl);
-    } catch (e) {
-      throw toAppException(e, 'Could not delete item.');
-    }
-  }
+  Future<void> deleteItem(Item item) => _guard(() async {
+    await _remote.deleteItem(item.id);
+    await _storage.remove(item.imageUrl);
+  }, 'Could not delete item.');
 
   @override
   Future<int> recordMovement({
@@ -148,47 +146,42 @@ class InventoryRepositoryImpl implements InventoryRepository {
     required MovementType type,
     required int quantity,
     String? note,
-  }) async {
-    try {
-      return await _remote.recordMovement(
-        itemId: item.id,
-        movementType: type.code,
-        quantity: quantity,
-        note: note,
-      );
-    } catch (e) {
-      throw toAppException(e, 'Could not record movement.');
-    }
-  }
+  }) => _guard(
+    () => _remote.recordMovement(
+      itemId: item.id,
+      movementType: type.code,
+      quantity: quantity,
+      note: note,
+    ),
+    'Could not record movement.',
+  );
 
   @override
   Future<List<StockMovement>> fetchMovements({
     MovementType? type,
     DateTime? day,
-  }) async {
-    try {
-      final rows = await _remote.fetchMovements(type: type?.code, day: day);
-      return [for (final row in rows) StockMovement.fromMap(row)];
-    } catch (e) {
-      throw toAppException(
-        e,
-        'Could not load movements.',
-        AppExceptionType.network,
-      );
-    }
-  }
+    int? itemId,
+    DateTime? since,
+    int limit = 500,
+  }) => _guard(
+    () async => [
+      for (final row in await _remote.fetchMovements(
+        type: type?.code,
+        day: day,
+        itemId: itemId,
+        since: since,
+        limit: limit,
+      ))
+        StockMovement.fromMap(row),
+    ],
+    'Could not load movements.',
+    _read,
+  );
 
   @override
-  Future<StockReport> fetchStockReport(int storeId) async {
-    try {
-      final row = await _remote.fetchStockReport(storeId);
-      return StockReport.fromMap(row);
-    } catch (e) {
-      throw toAppException(
-        e,
-        'Could not load report.',
-        AppExceptionType.network,
-      );
-    }
-  }
+  Future<StockReport> fetchStockReport(int storeId) => _guard(
+    () async => StockReport.fromMap(await _remote.fetchStockReport(storeId)),
+    'Could not load report.',
+    _read,
+  );
 }

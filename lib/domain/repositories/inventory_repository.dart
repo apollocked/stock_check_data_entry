@@ -27,6 +27,7 @@ abstract interface class InventoryRepository {
   });
 
   Future<List<Item>> fetchItems();
+  Future<Item?> fetchItem(int itemId);
   Future<Item?> searchByBarcode(String barcode);
 
   Future<Item> updateItem({
@@ -50,6 +51,9 @@ abstract interface class InventoryRepository {
   Future<List<StockMovement>> fetchMovements({
     MovementType? type,
     DateTime? day,
+    int? itemId,
+    DateTime? since,
+    int limit = 500,
   });
   Future<StockReport> fetchStockReport(int storeId);
 }
